@@ -5,6 +5,7 @@ This repository contains code for performing simulations, gathering data, and tr
 There are multiple directories. 
 - `\src` contains headless modular code 
 - `\runnable` contains code that connects to either a physical robot or boots a simulation
+- `\out` contains logs or general outputs from runnables
 - TODO - add more folder info here
 
 ## Prerequisites

@@ -10,6 +10,7 @@ else
     python3 -m virtualenv .venv
     source .venv/bin/activate
     echo "Made $PWD/.venv/bin/activate"
-    cd revolve2-detached
+    cd .revolve2-detached
     sh student_install.sh
+    cd ..
 fi

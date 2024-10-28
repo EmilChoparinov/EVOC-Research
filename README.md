@@ -13,7 +13,11 @@ There are multiple directories.
 - Compatible with: Linux, MacOS Sequoia, Windows 10/11 (Under WSL)
 
 ## Usage
-Run the `enter.sh` script. It will install the revolve2 environment for you. It will activate for you as well.
+Run the `enter.sh` script. It will install the revolve2 environment for you. It will activate for you as well. When interacting with the codebase, always do:
+
+```
+source enter.sh
+```
 
 If there are issues, you can manually follow the [revolve2 setup guide](https://ci-group.github.io/revolve2/installation/index.html#prerequisites) instead.
 

@@ -1,15 +1,57 @@
 # Evolutionary Computing @ VU 2024
-This repository contains code for performing simulations, gathering data, and training for the 2024 EVOC Project
+This repository contains code for performing simulations, gathering data, and training for the 2024 CI-EVOC Project 7
 
 ## Contents Guide
 There are multiple directories. 
-- `\src` contains headless modular code 
-- `\runnable` contains code that connects to either a physical robot or boots a simulation
-- `\out` contains logs or general outputs from runnables
-- TODO - add more folder info here
+- `/src` contains the simulation training code
+- `/apps` contains python apps that interact with the simulation or the physical robot
 
 ## Prerequisites
-If you need to run simulations, follow the [revolve2 setup guide](https://ci-group.github.io/revolve2/installation/index.html#prerequisites) to create a python virtual environment to do so.
+- A valid version of python required. I am under `3.10.12`. You can check by doing `python3 --version`.
+
+
+- Compatible with: Linux, MacOS Sequoia, Windows 10/11 (Under WSL)
+
+## Usage
+Run the `enter.sh` script. It will install the revolve2 environment for you. It will activate for you as well.
+
+If there are issues, you can manually follow the [revolve2 setup guide](https://ci-group.github.io/revolve2/installation/index.html#prerequisites) instead.
+
+If you have driver errors please contact me. You most likely do not have CUDA being detected by python correctly and I could help.
+
+## Running the EA
+`src/run.py` is the entry point. You can run it as is or use on of the options to customize:
+
+```
+usage: run.py [-h] [--cleanup] [--skip] [--runs RUNS] [--gen GEN]
+
+options:
+  -h, --help   show this help message and exit
+  --cleanup    Delete *.csv, *.txt in current directory
+  --skip       Do not perform ea iterations
+  --runs RUNS  Times to run EA
+  --gen GEN    How many generations per run
+```
+
+### Helpful Configurations:
+Clears the directory of all CSVs and log files.
+```
+python3 run.py --cleanup --skip
+```
+
+Ensures that each run has new files to write to before starting EA.
+```
+python3 run.py --cleanup
+```
+
+## Apps
+The apps folder contains python files that may be invoked with generated data to
+do different behaviors:
+- `evaluate.py` Performs an evaluation on a given genotype and no more
+- `remote_connection_test.py` Tests if robot can connect remotely and move something
+- `simulate.py` Play the simulation on a given genotype and no more 
+
 
 ## Contacts
 Emil Choparionv - emilchoparinov@gmail.com 
+Yushuang Wang

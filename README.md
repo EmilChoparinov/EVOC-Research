@@ -34,7 +34,7 @@ options:
   --cleanup    Delete *.csv, *.txt in current directory
   --skip       Do not perform ea iterations
   --runs RUNS  Times to run EA
-  --gen GEN    How many generations per run
+  --gens GEN    How many generations per run
 ```
 
 ### Helpful Configurations:

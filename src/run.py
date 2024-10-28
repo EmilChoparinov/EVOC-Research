@@ -9,7 +9,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--cleanup", action="store_true", help="Delete *.csv, *.txt in current directory")
 parser.add_argument("--skip", action="store_true", help="Do not perform ea iterations")
 parser.add_argument("--runs", type=int, default=config.ea_runs_cnt, help="Times to run EA")
-parser.add_argument("--gen", type=int, default=config.ea_generations_cnt, help="How many generations per run")
+parser.add_argument("--gens", type=int, default=config.ea_generations_cnt, help="How many generations per run")
 
 args = parser.parse_args()
 
@@ -23,4 +23,4 @@ if(args.cleanup):
     for file_path in glob.glob("*.csv") + glob.glob("*.txt"): os.remove(file_path)
 
 if not args.skip:
-    ea.process_ea_iteration(args.gen, args.runs)
+    ea.process_ea_iteration(args.gens, args.runs)

@@ -33,8 +33,8 @@ def record_behavior(robot: ModularRobot, fitness: float, behavior: simulated_beh
                 case "frame_id": return idx
                 case _:
                     abs_pose = pose_func(csv_map[col])
-                    robot_coord_list.append((abs_pose.position.x, abs_pose.position.z))
-                    return f"({abs_pose.position.x},{abs_pose.position.z})"
+                    robot_coord_list.append((abs_pose.position.x, abs_pose.position.y))
+                    return f"({abs_pose.position.x},{abs_pose.position.y})"
         
         # Collect the robots coordinates and put it in a dictionary that matches
         # the CSV definition `csv_cols`

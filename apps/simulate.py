@@ -58,10 +58,12 @@ robot_body = gecko_v2()
 
 # We overwrite the random CPG with our own weight matrix
 robot_brain = BrainCpgNetworkNeighborRandom(robot_body, rng) 
-
 # Perform matrix transform from the csv. Flip the horizontal. Then convert from pdarray :-> ndarray.
 robot_brain._weight_matrix = pd.read_csv(args.weights, header=None).to_numpy(dtype=float)
 
+# from revolve2.modular_robot.brain.dummy import BrainDummy 
+
+# robot_brain = BrainDummy()
 robot = ModularRobot(robot_body, robot_brain)
 
 def main() -> None:
@@ -70,8 +72,8 @@ def main() -> None:
     scene.add_robot(robot)
     
     simulate_scenes(
-        simulator=LocalSimulator(),
-        batch_parameters=make_standard_batch_parameters(simulation_time=60),
+        simulator=LocalSimulator(viewer_type="native", start_paused=True),
+        batch_parameters=make_standard_batch_parameters(simulation_time=999999),
         scenes=scene
     )
 

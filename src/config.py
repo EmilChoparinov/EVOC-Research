@@ -10,8 +10,6 @@ from revolve2.modular_robot.brain.cpg import active_hinges_to_cpg_network_struct
 from revolve2.simulators.mujoco_simulator import LocalSimulator
 
 import cma
-
-# The Basics
 import pandas as pd
 
 # Setup Routines ===============================================================
@@ -28,7 +26,7 @@ def generate_cma() -> cma.CMAEvolutionStrategy:
     options = cma.CMAOptions()
     options.set("bounds", bounds)
     options.set("seed", seed_from_time() % 2 ** 32)
-    options.set("popsize", population)
+    # options.set("popsize", population)
     
     return cma.CMAEvolutionStrategy(initial_mean, initial_std, options)
 
@@ -83,5 +81,5 @@ collection_rate = 30
 # it's contents are recorded to most-fit-xy-run-[X].csv
 write_buffer = pd.DataFrame(columns=csv_cols)
 
-#== Write to this CSV the best genotype per EA run
+# Write to this CSV the best genotype per EA run
 best_solution_per_ea = "best-solutions-per-ea.csv"

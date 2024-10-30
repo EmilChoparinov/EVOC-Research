@@ -46,7 +46,7 @@ def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt):
         best_robot, best_behavior, best_fitness = evaluate.find_most_fit(
             fitnesses, robots, behaviors)
         
-        logging.info(f"{cma_es.result.xbest=} {cma_es.result.fbest}")
+        logging.info(f"{cma_es.result.xbest=}\n{cma_es.result.fbest=}")
         
         data_collection.record_behavior(
             best_robot, best_fitness, best_behavior, generation_id=generation_i)

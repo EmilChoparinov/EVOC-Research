@@ -30,7 +30,7 @@ import numpy as np
 import threading
 from pprint import pprint
 
-wait_for_input = True
+robot_connection_success = threading.Condition()
 
 body_part = Literal["left_arm", "right_arm", "left_leg", "right_leg", "tail", "torso"]
 
@@ -89,22 +89,30 @@ class CalibrateBrainInstance(BrainInstance):
         # All other hinges set to neutral
         for i, q in enumerate(question_order):
             if i == question_ctx:
+                import pdb;pdb.set_trace()
                 control_interface.set_active_hinge_target(
-                    body_map[q], np.deg2rad(60)
+                    body_map[q], 1
                 )
-            control_interface.set_active_hinge_target(
-                body_map[q], 0)
+            #     continue
+            # control_interface.set_active_hinge_target(
+            #     body_map[q], 0)
              
         
 def on_prepared() -> None:
     global wait_for_input
     print("Robot is ready. Press enter to start")
     input()
-    wait_for_input = False
+    
+    # Wake up question interface now
+    with robot_connection_success:
+        robot_connection_success.notifyAll()
 
 def question_interface() -> None:
     global question_idx
-    while(not wait_for_input): pass
+    
+    # Wait for the robot to connect on other thread
+    with robot_connection_success:
+        robot_connection_success.wait()
 
     for i, q in enumerate(question_order):
         question_idx = i
@@ -113,7 +121,7 @@ def question_interface() -> None:
         inversion_map[PIN_CONFIG[q]] = is_rev
 
 def connect_to_robot():
-    brain = CalibrateBrainInstance()
+    brain = CalibrationBrain()
 
     robot = ModularRobot(body, brain)
 
@@ -122,26 +130,26 @@ def connect_to_robot():
         hinge_mapping={UUIDKey(v): PIN_CONFIG[k] for k,v in body_map.items()},
         run_duration=30,
         control_frequency=30,
-        initial_hinge_positions={UUIDKey(k): 0 for k,_ in body_map.items()},
+        initial_hinge_positions={UUIDKey(v): 0 for _,v in body_map.items()},
         inverse_servos={},
     )
 
     print("Initializing robot..")
     run_remote(
         config=config,
-        hostname="10.15.3.103",
-        debug=False,
-        on_prepared=on_prepared,
-        display_camera_view=False
+        hostname="10.15.3.59",
+        debug=True,
+        on_prepared=on_prepared
     )
     
-t1 = threading.Thread(target=connect_to_robot)
-t2 = threading.Thread(target=question_interface)
+# t1 = threading.Thread(target=connect_to_robot)
+# t2 = threading.Thread(target=question_interface)
 
-t1.start()
-t2.start()
+# t1.start()
+# t2.start()
 
-t1.join()
-t2.join()
+# t1.join()
+# t2.join()
 
+connect_to_robot()
 pprint(inversion_map)

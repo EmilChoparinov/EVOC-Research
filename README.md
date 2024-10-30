@@ -55,6 +55,20 @@ do different behaviors:
 - `remote_connection_test.py` Tests if robot can connect remotely and move something
 - `simulate.py` Play the simulation on a given genotype and no more 
 
+## Important Configurations
+Emil and Yushuang have setup the I/O pins configured as:
+
+```
+Left Arm: 0
+Left Leg: 1
+Torso: 8
+Reft Arm: 31
+Relf Leg: 30
+Tail: 24
+```
+
+Use the above legend as a reference when editing physical robot related code.
+
 
 ## Contacts
 Emil Choparionv - emilchoparinov@gmail.com 

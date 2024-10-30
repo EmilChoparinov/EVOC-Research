@@ -72,7 +72,7 @@ def main() -> None:
     scene.add_robot(robot)
     
     simulate_scenes(
-        simulator=LocalSimulator(viewer_type="native", start_paused=True),
+        simulator=LocalSimulator(start_paused=True),
         batch_parameters=make_standard_batch_parameters(simulation_time=999999),
         scenes=scene
     )

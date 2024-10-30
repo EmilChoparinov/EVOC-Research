@@ -207,6 +207,7 @@ async def _run_remote_impl(
             pin_controls = _active_hinge_targets_to_pin_controls(
                 config, control_interface._set_active_hinges
             )
+
             match hardware_type:
                 case HardwareType.v1:
                     await service.control(
@@ -215,6 +216,7 @@ async def _run_remote_impl(
                     sensor_state = ModularRobotSensorStateImplV1()
                 case HardwareType.v2:
                     pins = [pin for pin in active_hinge_sensor_to_pin.values()]
+                    start = time.time()
                     sensor_readings = (
                         await service.controlAndReadSensors(
                             robot_daemon_protocol_capnp.ControlAndReadSensorsArgs(
@@ -222,6 +224,7 @@ async def _run_remote_impl(
                             )
                         )
                     ).response
+                    print(f"sensor collection step took: {time.time()- start:.4f} seconds")
 
                     imu_sensor_states = _get_imu_sensor_state(
                         config.modular_robot.body.core.sensors.imu_sensor,
@@ -241,6 +244,7 @@ async def _run_remote_impl(
                         imu_sensor_states=imu_sensor_states,
                         camera_sensor_states=camera_sensor_states,
                     )
+                    
 
                     if battery_print_timer > 5.0:
                         print(
@@ -344,7 +348,7 @@ def run_remote(
                 on_prepared=on_prepared,
                 port=port,
                 debug=debug,
-                manual_mode=manual_mode,
+                manual_mode=manual_mode
             )
         )
     )

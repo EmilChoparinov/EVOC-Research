@@ -11,6 +11,7 @@ from revolve2.simulators.mujoco_simulator import LocalSimulator
 
 import cma
 import pandas as pd
+from dataclasses import dataclass
 
 # Setup Routines ===============================================================
 def generate_cma() -> cma.CMAEvolutionStrategy:
@@ -83,3 +84,13 @@ write_buffer = pd.DataFrame(columns=csv_cols)
 
 # Write to this CSV the best genotype per EA run
 best_solution_per_ea = "best-solutions-per-ea.csv"
+
+@dataclass
+class PinMap:
+    """A map of all hinges with their associated pin numbers"""
+    left_arm: int = 0
+    left_leg: int = 1
+    torso: int = 8
+    right_arm: int = 31
+    right_leg: int = 30
+    tail: int = 24

@@ -115,7 +115,7 @@ def remote_control_with_polling_rate(config:Config, hostname:str, port:int, rate
             )
             
             # Send Network Request
-            await service.control(
+            service.control(
                 robot_daemon_protocol_capnp.ControlArgs(setPins=pin_controller)
             )
         

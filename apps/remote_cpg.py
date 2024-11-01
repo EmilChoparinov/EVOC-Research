@@ -38,6 +38,7 @@ from revolve2.modular_robot import ModularRobot, ModularRobotControlInterface
 from revolve2.modular_robot_physical import Config, UUIDKey
 from revolve2.modular_robot_physical.remote import run_remote
 
+from src.network_layer import remote_control_with_polling_rate
 
 import numpy as np
 
@@ -124,9 +125,16 @@ config = Config(
 )
 
 print("Initializing robot..")
-run_remote(
+remote_control_with_polling_rate(
     config=config,
-    hostname="10.15.3.59",
-    debug=True,
-    on_prepared=on_prepared
+    port=20812,
+    hostname="localhost",
+    rate=30
 )
+
+# run_remote(
+#     config=config,
+#     hostname="10.15.3.59",
+#     debug=True,
+#     on_prepared=on_prepared
+# )

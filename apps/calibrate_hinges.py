@@ -20,7 +20,7 @@ import threading
 from pprint import pprint
 
 # import config as evoc_config
-from src.config import create_physical_mapping, offset_map, inversion_map
+from src.config import PhysMap
 
 
 
@@ -28,6 +28,7 @@ idx = 0
 pins = [0,1,24,8,30,31]
 body = gecko_v2()
 
+pmap = PhysMap.map_with(body)
 body_map: dict[int, ActiveHingeV2] = {
         31: body.core_v2.right_face.bottom, # right arm
         0: body.core_v2.left_face.bottom, # left arm
@@ -56,8 +57,9 @@ class CalibrateHingeBrainInstance(BrainInstance):
             idx += 1
             return
         
-        
-        hinge = body_map[pins[idx]]
+        pin_map = {v["pin"]: v["hinge"] for k,v in pmap}
+        hinge = pin_map[pins[idx]]
+
         try:
             control_interface.set_active_hinge_target(hinge, float(cmd))
         except:
@@ -66,19 +68,18 @@ class CalibrateHingeBrainInstance(BrainInstance):
 brain = CalibrateHingeBrain()
 robot = ModularRobot(body, brain)
 
+
 def on_prepared() -> None:
     print("Robot is ready. Press enter to start")
     input()
     
-initial_positions = offset_map(create_physical_mapping(body))
 config = Config(
     modular_robot=robot,
-    hinge_mapping={UUIDKey(v): k for k,v in body_map.items()},
+    hinge_mapping={UUIDKey(v["hinge"]): v["pin"] for k,v in pmap},
     run_duration=99999,
     control_frequency=30,
-    # initial_hinge_positions=initial_positions,
-    initial_hinge_positions={UUIDKey(v): 0 for k,v in body_map.items()},
-    inverse_servos=inversion_map(create_physical_mapping(body)),
+    initial_hinge_positions={UUIDKey(v): 0 for k,v in pmap},
+    inverse_servos={UUIDKey(v["hinge"]): v["is_inverse"] for k,v in pmap}
 )
 
 print("Initializing robot..")

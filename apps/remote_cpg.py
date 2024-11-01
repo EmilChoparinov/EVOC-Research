@@ -110,7 +110,6 @@ robot = ModularRobot(
 def on_prepared() -> None:
     print("Robot is ready. Press enter to start")
     input()
-
 pmap = PhysMap.map_with(body)
 config = Config(
     modular_robot=robot,

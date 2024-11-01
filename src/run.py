@@ -4,6 +4,8 @@ import argparse
 import glob
 import os
 import logging
+# import multiprocessing # import to run in Mac
+# multiprocessing.set_start_method('fork', force=True)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--cleanup", action="store_true", help="Delete *.csv, *.txt in current directory")
@@ -24,3 +26,15 @@ if(args.cleanup):
 
 if not args.skip:
     ea.process_ea_iteration(args.gens, args.runs)
+
+def main():
+    max_gens = args.gens
+    max_runs = args.runs
+
+    ea.export_ea_metadata()
+
+    ea.process_ea_iteration(max_gen=max_gens, max_runs=max_runs)
+
+if __name__ == '__main__':
+    if not args.skip:
+        main()

@@ -10,15 +10,47 @@ import logging
 import math
 
 from typedef import simulated_behavior, genotype
+from data_collection import record_elite_generations
 
 import data_collection
 import evaluate
 import config
+import csv
+import random
+import os
+
+def export_ea_metadata(run_id: int = 0):
+    seed = config.random_seed if hasattr(config, 'random_seed') else random.randint(0, 1000000)
+    initial_mean = config.initial_mean if hasattr(config, 'initial_mean') else [0.0] * 9
+    initial_sigma = config.initial_sigma if hasattr(config, 'initial_sigma') else 0.5
+    bounds = config.bounds if hasattr(config, 'bounds') else (-2, 2)
+
+    metadata_file = "ea-run-metadata.csv"
+
+    metadata = [
+        ["Run ID", run_id],
+        ["Seed", seed],
+        ["Initial Mean", initial_mean],
+        ["Initial Sigma", initial_sigma],
+        ["Bounds", bounds]
+    ]
+
+    with open(metadata_file, mode='a', newline='') as file:
+        writer = csv.writer(file)
+        if file.tell() == 0:
+            writer.writerow(["Parameter", "Value"])
+        writer.writerows(metadata)
+
+    logging.info(f"Metadata for run {run_id} exported to {metadata_file}")
+
 
 # TODO: This function has been primed to be embarrassingly parallel if more performance required.
 def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt):
     if(max_runs == 0): return
-    
+
+    # record data
+    export_ea_metadata(max_runs)
+
     # Stack `max_run` times this function and save output
     process_ea_iteration(max_gen, max_runs - 1)
     
@@ -41,7 +73,14 @@ def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt):
         robots, behaviors = ea_simulate_step(solutions)
         fitnesses = -evaluate.evaluate(robots, behaviors)
         cma_es.tell(solutions, fitnesses)
-        
+
+        # top 3 fitness and corresponding robots and weight matrices
+        top_3_indices = sorted(range(len(fitnesses)), key=lambda i: fitnesses[i], reverse=True)[:3]
+        top_3_list = [(robots[i], fitnesses[i], robots[i].brain._weight_matrix) for i in top_3_indices]
+
+        for i, (robot, fitness, weights_matrix) in enumerate(top_3_list):
+            record_elite_generations(run_id=max_runs, generation=generation_i, fitness=fitness, matrix=weights_matrix)
+
         # Data Collection Step
         best_robot, best_behavior, best_fitness = evaluate.find_most_fit(
             fitnesses, robots, behaviors)

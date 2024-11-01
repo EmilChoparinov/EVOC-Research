@@ -1,3 +1,46 @@
+"""
+Goal: The goal of this file is to store all configurations for the source. 
+      Any parameters with interest that could be manually altered should be
+      stored in this file.
+      
+Properties:
+
+initial_mean: Generates the initial state for CMA-ES. As long as the genotype.
+initial_std:  The standard deviation to start CMS-ES with.
+bounds:       CMA-ES bounding property
+population:   The amount of robots in the simulation
+
+body_to_csv_map: Generates a dictionary relating the body parts of the robot 
+                 semantically with its object in the simulation
+
+generated_fittest_xy_csv: Generates a filename string for the fittest per 
+                          generation xy plot
+
+generate_log_file: Generates the filename string for the simulation log output
+
+body_shape:         The fixed morphology to use in the simulation
+cpg_network_struct: The CPG network generated based on `body_shape` morphology
+output_mapping:     A map between `body_shape` and the CPG
+
+concurrent_simulators: The amount of simulations that should run concurrently
+ea_runs_cnt:           The amount of runs the evolutionary algorithm should do
+ea_generations_cnt:    The amount of generations to perform
+generate_cma:          Generates CMA-ES object to perform EA run with
+
+simulator:             Revolve2 simulator object
+terrain:               Terrain to use in the simulation
+simulation_ttl:        How long the simulation will last in sec (time to live)
+
+csv_cols:              The columns used for `generate_fittest_xy_csv`
+collection_rate:       How many times per second do we sample Pose data
+
+write_buffer:          A pandas buffer object for `generate_fittest_xy_csv`
+
+PhysMap:          DataClass containing the physical PIN configuration.
+PhysMap.get_box:  Returns the ActiveHingeV2 object based on the body part given
+PhysMap.map_with: Creates a map with the hinge object alongside the labels
+"""
+
 from revolve2.standards.modular_robots_v2 import gecko_v2
 from revolve2.standards import terrains
 
@@ -9,21 +52,17 @@ from revolve2.modular_robot.brain.cpg import active_hinges_to_cpg_network_struct
 from revolve2.modular_robot_physical import Config, UUIDKey
 
 from revolve2.simulators.mujoco_simulator import LocalSimulator
-from typing import Literal
+from typing import Callable, Literal, TypedDict
 
 import cma
 import pandas as pd
 from dataclasses import dataclass
 
-# Setup Routines ===============================================================
 def generate_cma() -> cma.CMAEvolutionStrategy:
-    # Generate the initial state. The list of 0's is as long as the genotype
-    # (the cpg network parameter length)
     initial_mean = cpg_network_struct.num_connections * [0.0]
     initial_std = 0.5
     bounds = [-2.5, 2.5]
     population = 10
-    
     
     # CMA seed is constrained to be smaller than 2**32
     options = cma.CMAOptions()
@@ -32,7 +71,6 @@ def generate_cma() -> cma.CMAEvolutionStrategy:
     # options.set("popsize", population)
     
     return cma.CMAEvolutionStrategy(initial_mean, initial_std, options)
-
 
 
 def body_to_csv_map(body: BodyV2): 
@@ -88,63 +126,58 @@ write_buffer = pd.DataFrame(columns=csv_cols)
 # Write to this CSV the best genotype per EA run
 best_solution_per_ea = "best-solutions-per-ea.csv"
 
-@dataclass
-class PinMap:
-    """A map of all hinges with their associated pin numbers"""
-    left_arm: int = 0
-    left_leg: int = 1
-    torso: int = 8
-    right_arm: int = 31
-    right_leg: int = 30
-    tail: int = 24
 
-phys_map_t = dict[str,dict[Literal["hinge","pin","offset","inverse"], any]]
+# Typedef for valid box on robot
+phys_box_names = Literal["left_arm", "right_arm", "torso", "tail", "left_leg", "right_leg"]
 
-def offset_map(phys_map: phys_map_t):
-    return {UUIDKey(v["hinge"]): v["offset"] for k,v in phys_map.items() }
+phys_config = dict[Literal["pin", "hinge", "is_inverse"]]
 
-def inversion_map(phys_map: phys_map_t):
-    return {v["pin"]: v["inverse"] for k,v in phys_map.items()}
+class PhysMap(TypedDict):
+    pin: int
+    extract: Callable[[BodyV2], ActiveHingeV2]
 
-def create_physical_mapping(body: BodyV2) -> phys_map_t:
-    """
-    Creates a combined map from the label to both pin and hinge data.
-    """
-    return {
-        "right_arm": {
-            "hinge": body.core_v2.right_face.bottom, 
-            "pin": 31,
-            "offset": 0,
-            "inverse": False
-        },
-        "left_arm": {
-            "hinge": body.core_v2.left_face.bottom, 
-            "pin": 0,
-            "offset": 0,
-            "inverse": True
-        },
-        "torso": {
-            "hinge": body.core_v2.back_face.bottom, 
-            "pin": 8,
-            "offset": 0,
-            "inverse": False
-        },
-        "tail": {
-            "hinge": body.core_v2.back_face.bottom.attachment.front, 
-            "pin": 24,
-            "offset": 0,
-            "inverse": False
-        },
-        "right_leg": {
-            "hinge": body.core_v2.back_face.bottom.attachment.front.attachment.right,
-            "pin": 30,
-            "offset": 0,
-            "inverse": True
-        },
-        "left_leg": {
-            "hinge": body.core_v2.back_face.bottom.attachment.front.attachment.left, 
-            "pin": 1,
-            "offset": 0,
-            "inverse": False
-        },
-    }
+    def get_box(body: BodyV2,box: phys_box_names):
+        phy_map: dict[phys_box_names, ActiveHingeV2] = {
+            "left_arm": body.core_v2.left_face.bottom.attachment,
+            "left_leg": body.core_v2.back_face.bottom.attachment.front.attachment.left.attachment,
+            "torso": body.core_v2.back_face.bottom.attachment,
+            "right_arm": body.core_v2.right_face.bottom.attachment,
+            "right_leg":body.core_v2.back_face.bottom.attachment.front.attachment.right.attachment,
+            "tail": body.core_v2.back_face.bottom.attachment.front.attachment,
+        }
+        return phy_map[box]
+    
+    def map_with(body: BodyV2) -> dict[phys_box_names, 'PhysMap']:
+        x = {
+            "left_arm": {
+                "pin": 0,
+                "hinge": PhysMap.get_box(body, "left_arm"),
+                "is_inverse": True
+            },
+            "left_leg": {
+                "pin": 1,
+                "hinge": PhysMap.get_box(body, "right_arm"),
+                "is_inverse": True
+            },
+            "torso": {
+                "pin": 8,
+                "hinge": PhysMap.get_box(body, "torso"),
+                "is_inverse": True
+            },
+            "right_arm": {
+                "pin": 31,
+                "hinge": PhysMap.get_box(body, "right_arm"),
+                "is_inverse": True
+            },
+            "right_leg": {
+                "pin": 30,
+                "hinge": PhysMap.get_box(body, "right_leg"),
+                "is_inverse": True
+            },
+            "tail": {
+                "pin": 24,
+                "hinge": PhysMap.get_box(body, "tail"),
+                "is_inverse": True
+            },
+        }
+ 

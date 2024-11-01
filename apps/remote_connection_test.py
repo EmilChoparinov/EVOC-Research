@@ -29,6 +29,8 @@ from revolve2.modular_robot_physical.remote import run_remote
 
 from revolve2.standards.modular_robots_v2 import gecko_v2
 
+from src.network_layer import remote_control_with_polling_rate
+
 from math import cos
 
 @dataclass
@@ -75,11 +77,18 @@ def main() -> None:
     )
 
     print("Initializing robot..")
-    run_remote(
+    remote_control_with_polling_rate(
         config=config,
         hostname=hostname,
-        debug=False,
-        on_prepared=on_prepared,
-        # display_camera_view=enable_video_feed
+        port=20812,
+        rate=5
     )
+
+    # run_remote(
+    #     config=config,
+    #     hostname=hostname,
+    #     debug=False,
+    #     on_prepared=on_prepared,
+    #     # display_camera_view=enable_video_feed
+    # )
 if __name__ == "__main__": main()

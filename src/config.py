@@ -148,7 +148,7 @@ class PhysMap(TypedDict):
         return phy_map[box]
     
     def map_with(body: BodyV2) -> dict[phys_box_names, 'PhysMap']:
-        x = {
+        return {
             "left_arm": {
                 "pin": 0,
                 "hinge": PhysMap.get_box(body, "left_arm"),
@@ -157,17 +157,17 @@ class PhysMap(TypedDict):
             "left_leg": {
                 "pin": 1,
                 "hinge": PhysMap.get_box(body, "right_arm"),
-                "is_inverse": True
+                "is_inverse": False
             },
             "torso": {
                 "pin": 8,
                 "hinge": PhysMap.get_box(body, "torso"),
-                "is_inverse": True
+                "is_inverse": False
             },
             "right_arm": {
                 "pin": 31,
                 "hinge": PhysMap.get_box(body, "right_arm"),
-                "is_inverse": True
+                "is_inverse": False
             },
             "right_leg": {
                 "pin": 30,
@@ -177,7 +177,7 @@ class PhysMap(TypedDict):
             "tail": {
                 "pin": 24,
                 "hinge": PhysMap.get_box(body, "tail"),
-                "is_inverse": True
+                "is_inverse": False
             },
         }
  

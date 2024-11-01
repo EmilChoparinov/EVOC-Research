@@ -110,7 +110,8 @@ robot = ModularRobot(
 def on_prepared() -> None:
     print("Robot is ready. Press enter to start")
     input()
-
+    
+import pdb;pdb.set_trace()
 pmap = PhysMap.map_with(body)
 config = Config(
     modular_robot=robot,
@@ -122,16 +123,25 @@ config = Config(
 )
 
 print("Initializing robot..")
-remote_control_with_polling_rate(
-    config=config,
-    port=20812,
-    hostname="10.15.3.59",
-    rate=10
-)
 
-# run_remote(
+scene = ModularRobotScene(terrain=terrains.flat())
+scene.add_robot(robot)
+
+simulate_scenes(
+    simulator=LocalSimulator(start_paused=False),
+    batch_parameters=make_standard_batch_parameters(simulation_time=9999),
+    scenes=scene
+)
+# remote_control_with_polling_rate(
 #     config=config,
+#     port=20812,
 #     hostname="10.15.3.59",
-#     debug=True,
-#     on_prepared=on_prepared
+#     rate=10
 # )
+
+# # run_remote(
+# #     config=config,
+# #     hostname="10.15.3.59",
+# #     debug=True,
+# #     on_prepared=on_prepared
+# # )

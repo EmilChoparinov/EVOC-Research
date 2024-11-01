@@ -3,11 +3,13 @@ from revolve2.standards import terrains
 
 from revolve2.experimentation.rng import seed_from_time
 
-from revolve2.modular_robot.body.v2 import BodyV2
+from revolve2.modular_robot.body.v2 import BodyV2, ActiveHingeV2
 from revolve2.modular_robot.body.base import ActiveHinge
 from revolve2.modular_robot.brain.cpg import active_hinges_to_cpg_network_structure_neighbor
+from revolve2.modular_robot_physical import Config, UUIDKey
 
 from revolve2.simulators.mujoco_simulator import LocalSimulator
+from typing import Literal
 
 import cma
 import pandas as pd
@@ -31,6 +33,8 @@ def generate_cma() -> cma.CMAEvolutionStrategy:
     
     return cma.CMAEvolutionStrategy(initial_mean, initial_std, options)
 
+
+
 def body_to_csv_map(body: BodyV2): 
     return  {
         "head": body.core_v2,
@@ -48,7 +52,6 @@ def generate_fittest_xy_csv(run_id: int = 0) -> str:
 def generate_log_file(run_id: int = 0) -> str:
     return f"log-run-{run_id}.txt"
 
-# Gecko Parameters =============================================================
 body_shape = gecko_v2()
 
 # Generate a CPG based on the gecko_v2's hinge tree
@@ -94,3 +97,54 @@ class PinMap:
     right_arm: int = 31
     right_leg: int = 30
     tail: int = 24
+
+phys_map_t = dict[str,dict[Literal["hinge","pin","offset","inverse"], any]]
+
+def offset_map(phys_map: phys_map_t):
+    return {UUIDKey(v["hinge"]): v["offset"] for k,v in phys_map.items() }
+
+def inversion_map(phys_map: phys_map_t):
+    return {v["pin"]: v["inverse"] for k,v in phys_map.items()}
+
+def create_physical_mapping(body: BodyV2) -> phys_map_t:
+    """
+    Creates a combined map from the label to both pin and hinge data.
+    """
+    return {
+        "right_arm": {
+            "hinge": body.core_v2.right_face.bottom, 
+            "pin": 31,
+            "offset": 0,
+            "inverse": False
+        },
+        "left_arm": {
+            "hinge": body.core_v2.left_face.bottom, 
+            "pin": 0,
+            "offset": 0,
+            "inverse": True
+        },
+        "torso": {
+            "hinge": body.core_v2.back_face.bottom, 
+            "pin": 8,
+            "offset": 0,
+            "inverse": False
+        },
+        "tail": {
+            "hinge": body.core_v2.back_face.bottom.attachment.front, 
+            "pin": 24,
+            "offset": 0,
+            "inverse": False
+        },
+        "right_leg": {
+            "hinge": body.core_v2.back_face.bottom.attachment.front.attachment.right,
+            "pin": 30,
+            "offset": 0,
+            "inverse": True
+        },
+        "left_leg": {
+            "hinge": body.core_v2.back_face.bottom.attachment.front.attachment.left, 
+            "pin": 1,
+            "offset": 0,
+            "inverse": False
+        },
+    }

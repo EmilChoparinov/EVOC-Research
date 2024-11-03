@@ -19,6 +19,7 @@ from revolve2.modular_robot import ModularRobot
 from revolve2.modular_robot.brain.cpg import active_hinges_to_cpg_network_structure_neighbor, BrainCpgNetworkNeighborRandom, CpgNetworkStructure, BrainCpgNetworkStatic
 from revolve2.standards.modular_robots_v2 import gecko_v2, snake_v2
 from revolve2.modular_robot.body.base import ActiveHinge
+from revolve2.modular_robot.brain.dummy import BrainDummy, BrainDummyInstance
 
 import pandas as pd
 import numpy as np
@@ -74,12 +75,14 @@ robot_brain = BrainCpgNetworkNeighborRandom(body, rng)
 # robot_brain._weight_matrix = pd.read_csv(args.weights, header=None).to_numpy(dtype=float)
 
 PARAMS = np.array(
+[-0.64907861, -0.20690301, -0.96089514,  0.92607873, -1.27081019,
+        0.70718109,  1.16130489, -1.22530135,  1.54471567]
 # Turn right v1
-[-2.13869271,  0.00726176, -1.77607038,  1.72366607, -2.44596507,
-       -2.30199428, -1.103323  ,  0.60124181,  0.44488595]
+# [-2.13869271,  0.00726176, -1.77607038,  1.72366607, -2.44596507,
+#        -2.30199428, -1.103323  ,  0.60124181,  0.44488595]
 # Turn left v2
-[-2.41680794, -0.09332698, -2.01586048, -0.22636505, -1.9637401 ,
-        2.4865368 ,  0.32540607, -1.05750314,  2.49999121]
+# [-2.41680794, -0.09332698, -2.01586048, -0.22636505, -1.9637401 ,
+        # 2.4865368 ,  0.32540607, -1.05750314,  2.49999121]
 )
 
 
@@ -101,6 +104,7 @@ import math
 
 robot = ModularRobot(
                 body=body,
+                # brain=BrainDummy()
                 brain=BrainCpgNetworkStatic.uniform_from_params(
                     params=PARAMS,
                     cpg_network_structure=cpg_network_structure,
@@ -119,7 +123,7 @@ config = Config(
     hinge_mapping={UUIDKey(v): k for k,v in body_map.items()},
     run_duration=99999,
     control_frequency=30,
-    initial_hinge_positions={UUIDKey(v): 0 for k,v in body_map.items()},
+    initial_hinge_positions={UUIDKey(v): 0.0 for k,v in body_map.items()},
     inverse_servos={v["pin"]: v["is_inverse"] for k,v in pmap.items()},
 )
 
@@ -128,11 +132,12 @@ print("Initializing robot..")
 scene = ModularRobotScene(terrain=terrains.flat())
 scene.add_robot(robot)
 
-simulate_scenes(
-    simulator=LocalSimulator(start_paused=False),
+scenes = simulate_scenes(
+    simulator=LocalSimulator(headless=False, start_paused=True),
     batch_parameters=make_standard_batch_parameters(simulation_time=9999),
     scenes=scene
 )
+
 # remote_control_with_polling_rate(
 #     config=config,
 #     port=20812,

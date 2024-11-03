@@ -134,7 +134,7 @@ best_solution_per_ea = "best-solutions-per-ea.csv"
 # Typedef for valid box on robot
 phys_box_names = Literal["left_arm", "right_arm", "torso", "tail", "left_leg", "right_leg"]
 
-phys_config = dict[Literal["pin", "hinge", "is_inverse"]]
+phys_config = dict[Literal["pin", "box", "is_inverse"]]
 
 class PhysMap(TypedDict):
     pin: int
@@ -151,36 +151,54 @@ class PhysMap(TypedDict):
         }
         return phy_map[box]
     
+    def get_hinge(body: BodyV2,hinge: phys_box_names):
+        phy_map: dict[phys_box_names, ActiveHingeV2] = {
+            "left_arm": body.core_v2.left_face.bottom,
+            "left_leg": body.core_v2.back_face.bottom.attachment.front.attachment.left,
+            "torso": body.core_v2.back_face.bottom,
+            "right_arm": body.core_v2.right_face.bottom,
+            "right_leg":body.core_v2.back_face.bottom.attachment.front.attachment.right,
+            "tail": body.core_v2.back_face.bottom.attachment.front,
+        }
+        return phy_map[hinge]
+    
+
     def map_with(body: BodyV2) -> dict[phys_box_names, 'PhysMap']:
         return {
             "left_arm": {
                 "pin": 0,
-                "hinge": PhysMap.get_box(body, "left_arm"),
+                "box": PhysMap.get_box(body, "left_arm"),
+                "hinge": PhysMap.get_hinge(body, "left_arm"),
                 "is_inverse": True
             },
             "left_leg": {
                 "pin": 1,
-                "hinge": PhysMap.get_box(body, "right_arm"),
+                "box": PhysMap.get_box(body, "right_arm"),
+                "hinge": PhysMap.get_hinge(body, "right_arm"),
                 "is_inverse": False
             },
             "torso": {
                 "pin": 8,
-                "hinge": PhysMap.get_box(body, "torso"),
+                "box": PhysMap.get_box(body, "torso"),
+                "hinge": PhysMap.get_hinge(body, "torso"),
                 "is_inverse": False
             },
             "right_arm": {
                 "pin": 31,
-                "hinge": PhysMap.get_box(body, "right_arm"),
+                "box": PhysMap.get_box(body, "right_arm"),
+                "hinge": PhysMap.get_hinge(body, "right_arm"),
                 "is_inverse": False
             },
             "right_leg": {
                 "pin": 30,
-                "hinge": PhysMap.get_box(body, "right_leg"),
+                "box": PhysMap.get_box(body, "right_leg"),
+                "hinge": PhysMap.get_hinge(body, "right_leg"),
                 "is_inverse": True
             },
             "tail": {
                 "pin": 24,
-                "hinge": PhysMap.get_box(body, "tail"),
+                "box": PhysMap.get_box(body, "tail"),
+                "hinge": PhysMap.get_hinge(body, "tail"),
                 "is_inverse": False
             },
         }

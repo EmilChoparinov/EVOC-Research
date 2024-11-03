@@ -78,6 +78,9 @@ Tail: 24
 
 Use the above legend as a reference when editing physical robot related code.
 
+## For the `apps.game_sim` App
+You need to also additionally install pygame. Do `python3 -m pip install pygame` within your virtual
+environment.
 
 ## Contacts
 Emil Choparionv - emilchoparinov@gmail.com 

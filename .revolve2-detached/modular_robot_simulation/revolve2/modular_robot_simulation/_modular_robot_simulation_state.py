@@ -1,4 +1,5 @@
 from revolve2.modular_robot.body import Module
+from revolve2.modular_robot.body.base import ActiveHinge
 from revolve2.simulation.scene import MultiBodySystem, Pose, SimulationState
 from revolve2.simulation.scene import MultiBodySystem, SimulationState, UUIDKey
 from revolve2.modular_robot import ModularRobot
@@ -49,6 +50,10 @@ class ModularRobotSimulationState:
         """
         raise NotImplementedError()
         return Pose()
+
+    def get_hinge_position(self, hinge: ActiveHinge):
+        joint_hinge = self._modular_robot_to_module_map.active_hinge_to_joint_hinge[UUIDKey(hinge)]
+        return self._simulation_state.get_hinge_joint_position(joint_hinge)
 
     def get_module_absolute_pose(self, module: Module) -> Pose:
         """

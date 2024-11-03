@@ -57,7 +57,7 @@ class CalibrateHingeBrainInstance(BrainInstance):
             idx += 1
             return
         
-        pin_map = {v["pin"]: v["hinge"] for k,v in pmap}
+        pin_map = {v["pin"]: v["box"] for k,v in pmap}
         hinge = pin_map[pins[idx]]
 
         try:
@@ -75,11 +75,11 @@ def on_prepared() -> None:
     
 config = Config(
     modular_robot=robot,
-    hinge_mapping={UUIDKey(v["hinge"]): v["pin"] for k,v in pmap},
+    hinge_mapping={UUIDKey(v["box"]): v["pin"] for k,v in pmap},
     run_duration=99999,
     control_frequency=30,
     initial_hinge_positions={UUIDKey(v): 0 for k,v in pmap},
-    inverse_servos={UUIDKey(v["hinge"]): v["is_inverse"] for k,v in pmap}
+    inverse_servos={UUIDKey(v["box"]): v["is_inverse"] for k,v in pmap}
 )
 
 print("Initializing robot..")

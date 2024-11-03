@@ -3,7 +3,7 @@
 import numpy as np
 
 from revolve2.modular_robot.body.v2 import ActiveHingeV2, BodyV2, BrickV2
-
+from revolve2.modular_robot.body import RightAngles
 
 def all() -> list[BodyV2]:
     """

@@ -42,7 +42,6 @@ def get_robot_euclidian_center(robot: ModularRobot, state: SceneSimulationState)
 
     # Calculate the center by taking the mean of each component independently
     return (pd_xys['x'].mean(), pd_xys['y'].mean(), pd_xys['z'].mean())
-    
 
 def get_robot_euclidian_head(robot: ModularRobot, state: SceneSimulationState) -> tuple[float, float, float]:
     return state.get_modular_robot_simulation_state(robot).get_module_absolute_pose(robot.body.core_v2).position
@@ -150,24 +149,50 @@ def get_pose_z_airtime(robot: ModularRobot, behavior: simulated_behavior) -> flo
     
     return len(time_correct) / len(zs)
 
+def get_pose_muscle_effiency(robot: ModularRobot, behavior: simulated_behavior) -> float:
+    """
+    How efficient the hinge use was for this robot. Cumulative difference in hinge
+    value passed through sigmoid(abs(x)).
+
+    This function returns a penality value, so smaller is better!
+    """
+    n = len(behavior)
+    state_pairs = list(zip(range(0,n,2), range(1,n,2)))
+
+    def eval_effiency(s0: ModularRobotSimulationState, sN: ModularRobotSimulationState):
+        hinges = robot.body.find_modules_of_type(ActiveHingeV2)
+        
+        s0_hinges = [s0.get_hinge_position(h)*50 for h in hinges]
+        sN_hinges = [sN.get_hinge_position(h)*50 for h in hinges]
+        
+        # Calculates the overall effiency of the robot in this specific state
+        x = sum([
+            math.pow(abs(s0_pos - sN_pos),3)
+            for s0_pos, sN_pos in zip(s0_hinges, sN_hinges)
+        ])
+        return x
+
+
+    # The penality is fast rates of change on the hinges, AKA more energy
+    return sum([eval_effiency(
+            behavior[cur_i].get_modular_robot_simulation_state(robot), 
+            behavior[next_i].get_modular_robot_simulation_state(robot)
+        ) for cur_i, next_i in state_pairs])
+
+
+
 def get_pose_cumulative_maximal_rotation(robot: ModularRobot, behavior: simulated_behavior) -> float:
     """
     The total amount of rotation performed by the robot in the simulation. Can go over
     one full 360 degree rotation. Will keep adding. Always looks at difference
     between start and current
     """
-    # Create the origin to be the (0,0). We only care about rotation
-    # in 2D space
-    
-    # origin_x, origin_y = (0,0)
-    # start_x, start_y, _ = get_robot_euclidian_head(robot, behavior)
-    
     pmap = PhysMap.map_with(robot.body)
     vorigin_head = get_pose_of(
         robot, behavior[0], robot.body.core_v2)
     
     vorigin_tail = get_pose_of(
-        robot, behavior[0], pmap["tail"]["hinge"] 
+        robot, behavior[0], pmap["tail"]["box"] 
     )
     
     # For all measurements, we add the total radians rotated from
@@ -175,7 +200,7 @@ def get_pose_cumulative_maximal_rotation(robot: ModularRobot, behavior: simulate
     return sum([coords_to_rad_vspace(
         vorigin_head, vorigin_tail,
         get_pose_of(robot, state, robot.body.core_v2),
-        get_pose_of(robot, state, pmap["tail"]["hinge"])
+        get_pose_of(robot, state, pmap["tail"]["box"])
     ) for state in behavior])
 
 
@@ -189,7 +214,7 @@ def get_pose_maximal_rotation(robot: ModularRobot, behavior: simulated_behavior)
         robot, behavior[0], robot.body.core_v2)
     
     vorigin_tail = get_pose_of(
-        robot, behavior[0], pmap["tail"]["hinge"] 
+        robot, behavior[0], pmap["tail"]["box"] 
     )
     
     n = len(behavior)
@@ -200,7 +225,7 @@ def get_pose_maximal_rotation(robot: ModularRobot, behavior: simulated_behavior)
     return sum([coords_to_rad_vspace(
         vorigin_head, vorigin_tail,
         get_pose_of(robot, behavior[idx_cur], robot.body.core_v2),
-        get_pose_of(robot, behavior[idx_next], pmap["tail"]["hinge"])) 
+        get_pose_of(robot, behavior[idx_next], pmap["tail"]["box"])) 
      for idx_cur,idx_next in state_pairs])
 
 def get_pose_maximal_rotation_filter_dir(robot: ModularRobot, behavior: simulated_behavior, go_left: bool) -> float:
@@ -213,7 +238,7 @@ def get_pose_maximal_rotation_filter_dir(robot: ModularRobot, behavior: simulate
         robot, behavior[0], robot.body.core_v2)
     
     vorigin_tail = get_pose_of(
-        robot, behavior[0], pmap["tail"]["hinge"] 
+        robot, behavior[0], pmap["tail"]["box"] 
     )
     
     n = len(behavior)
@@ -225,7 +250,7 @@ def get_pose_maximal_rotation_filter_dir(robot: ModularRobot, behavior: simulate
         coords_to_rad_vspace(
             vorigin_head, vorigin_tail,
             get_pose_of(robot, behavior[idx_cur], robot.body.core_v2),
-            get_pose_of(robot, behavior[idx_next], pmap["tail"]["hinge"])
+            get_pose_of(robot, behavior[idx_next], pmap["tail"]["box"])
         ) 
      for idx_cur, idx_next in state_pairs]
     return sum(rad[0] for rad in rad_deltas if (go_left and rad[1] == "left") or (not go_left and rad[1] == "right"))
@@ -238,7 +263,8 @@ def evaluate_angle_with_projection_with_z_avg(
 
     def evalf(robot: ModularRobot, states: simulated_behavior):
         # return get_pose_cumulative_maximal_rotation(robot, states)
-        return get_pose_maximal_rotation_filter_dir(robot, states, go_left=False)
+        # print(f"{get_pose_maximal_rotation_filter_dir(robot, states, go_left=False)=} - {get_pose_muscle_effiency(robot, states)=}")
+        return get_pose_maximal_rotation_filter_dir(robot, states, go_left=True) - get_pose_muscle_effiency(robot, states)
 
 
         _,_,origin_z = get_robot_euclidian_head(robot, states[0])

@@ -79,3 +79,6 @@ def coords_to_rad_vspace(v1_start, v1_end, v2_start, v2_end):
     direction = "left" if cross_product > 0 else "right"
 
     return angle, direction
+
+def sigmoid(x):
+    return 1 / (1 + np.exp(-x))

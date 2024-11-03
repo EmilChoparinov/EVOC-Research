@@ -56,6 +56,7 @@ from typing import Callable, Literal, TypedDict
 
 import cma
 import pandas as pd
+import math
 from dataclasses import dataclass
 
 def generate_cma() -> cma.CMAEvolutionStrategy:
@@ -99,7 +100,10 @@ cpg_network_struct, output_mapping = active_hinges_to_cpg_network_structure_neig
 
 # Experiment Parameters ========================================================
 concurrent_simulators = 8
-ea_runs_cnt = 5
+ea_runs_cnt = 13
+target_dist_per_run = [2.0]
+target_angle_per_run = [math.radians(90)]
+# target_angle_per_run = [math.radians(angle) for angle in range(0, 361, 30)]
 ea_generations_cnt = 500
 
 # Simulation Parameters ========================================================

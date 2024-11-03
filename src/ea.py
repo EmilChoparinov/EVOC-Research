@@ -39,7 +39,13 @@ def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt):
         # Evaluation Step
         solutions = cma_es.ask()
         robots, behaviors = ea_simulate_step(solutions)
-        fitnesses = -evaluate.evaluate(robots, behaviors)
+        # fitnesses = -evaluate.evaluate(robots, behaviors)
+        fitnesses = -evaluate.evaluate_angle_with_projection_with_z_avg(
+            robots,
+            behaviors,
+            max_runs,
+            generation_i
+        )
         cma_es.tell(solutions, fitnesses)
         
         # Data Collection Step

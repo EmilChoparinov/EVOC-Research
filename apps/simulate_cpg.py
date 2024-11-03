@@ -74,10 +74,12 @@ robot_brain = BrainCpgNetworkNeighborRandom(body, rng)
 # robot_brain._weight_matrix = pd.read_csv(args.weights, header=None).to_numpy(dtype=float)
 
 PARAMS = np.array(
-   [-2.99999447,  1.81308186, -0.0331997 ,  0.06852362,  2.89306811,
-       -0.58302268,  2.76108739, -2.99385889, -1.80114772]
-    # [-1.99028127,  0.08435464,  0.00391817, -0.02174904,  1.94509952,
-    #     1.60096773,  1.61155222, -1.99356261, -1.12994603]
+# Turn right v1
+[-2.13869271,  0.00726176, -1.77607038,  1.72366607, -2.44596507,
+       -2.30199428, -1.103323  ,  0.60124181,  0.44488595]
+# Turn left v2
+[-2.41680794, -0.09332698, -2.01586048, -0.22636505, -1.9637401 ,
+        2.4865368 ,  0.32540607, -1.05750314,  2.49999121]
 )
 
 
@@ -110,8 +112,7 @@ robot = ModularRobot(
 def on_prepared() -> None:
     print("Robot is ready. Press enter to start")
     input()
-    
-import pdb;pdb.set_trace()
+
 pmap = PhysMap.map_with(body)
 config = Config(
     modular_robot=robot,

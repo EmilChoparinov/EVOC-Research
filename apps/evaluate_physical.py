@@ -53,7 +53,9 @@ batch_cpg_params = [
     [-2.49991299,  0.44331288, -0.01261823, -0.01098447,  0.13277421,
        -2.4828977 ,  2.30644179, -2.1834448 , -1.42267434],
     [-2.49008386,  0.14421721,  1.30498339, -1.22142535,  1.12780339,
-        0.56658266,  2.44446142, -2.42483038, -1.33595407]
+        0.56658266,  2.44446142, -2.42483038, -1.33595407],
+    [-1.9827833 ,  1.28774508, -0.01424635, -1.98966957, -0.34402449,
+       -1.3233934 ,  1.55905103, -1.58050815, -1.03369622]
 ]
 
 body = gecko_v2()
@@ -91,7 +93,7 @@ class BatchTesterBrainInstance(BrainInstance):
     idx: int = 0
     
     # We pause the robots movements between experiments
-    ignore_dt: bool = False
+    capture_dt: bool = True
     
     def control(
         self, 
@@ -100,9 +102,9 @@ class BatchTesterBrainInstance(BrainInstance):
         control_interface: ModularRobotControlInterface
     ) -> None:
         # import pdb;pdb.set_trace()
-        if not self.ignore_dt:
+        if self.capture_dt:
             self.dt0 += dt
-            self.ignore_dt = False
+            self.capture_dt = False
         
         # After 30 seconds, we progress to the next CPG
         if(self.dt0 > 5):

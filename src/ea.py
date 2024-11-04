@@ -8,12 +8,15 @@ from revolve2.standards.simulation_parameters import make_standard_batch_paramet
 
 import logging
 import math
-
+import numpy as np
 from typedef import simulated_behavior, genotype
 
 import data_collection
 import evaluate
 import config
+
+from rotation_scaling import get_data_with_forward_center,translation_rotation
+
 
 # TODO: This function has been primed to be embarrassingly parallel if more performance required.
 def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt):
@@ -30,7 +33,8 @@ def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt):
     # Write the columns into the csv 
     behavior_csv = config.generate_fittest_xy_csv(max_runs)
     config.write_buffer.to_csv(behavior_csv, index=False)
-    
+
+
     # EA Loop
     for generation_i in range(max_gen):
         logging.info(
@@ -38,7 +42,12 @@ def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt):
 
         # Evaluation Step
         solutions = cma_es.ask()
+
         robots, behaviors = ea_simulate_step(solutions)
+        #Rotation
+        translation_rotation(get_data_with_forward_center(robots, behaviors))
+        # TODO scaling
+        
         fitnesses = -evaluate.evaluate(robots, behaviors)
         cma_es.tell(solutions, fitnesses)
         

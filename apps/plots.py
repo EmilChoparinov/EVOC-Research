@@ -60,10 +60,6 @@ def calculate_fitness_statistics(fitness_data):
         percentile_25 = np.percentile(fitness_values_sorted, 25)
         percentile_75 = np.percentile(fitness_values_sorted, 75)
 
-        # Ensure the mean is within the 25th and 75th percentiles
-        if not (percentile_25 <= mean_fitness <= percentile_75):
-            raise ValueError(f"Mean fitness {mean_fitness} is not between the 25th percentile {percentile_25} and 75th percentile {percentile_75} for generation {generation}")
-
         statistics[generation] = {
             'mean': mean_fitness,
             '25th_percentile': percentile_25,
@@ -123,7 +119,7 @@ def main(alpha_values, file_paths_by_alpha):
     plot_fitness_statistics(fitness_stats_by_alpha_best, 'best')
 
 # Define the folder path
-folder_path = r"C:\Users\TJ\Desktop\2024-2025\Evolutionary Computing\Research Assignment\Revolve2\apps\plot\runs"
+folder_path = r"/apps/plot/runs"
 
 # Gather all CSV file paths in the directory
 csv_files = [os.path.join(folder_path, f) for f in os.listdir(folder_path) if f.endswith('.csv')]

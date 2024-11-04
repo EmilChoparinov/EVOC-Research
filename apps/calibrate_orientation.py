@@ -30,7 +30,7 @@ import numpy as np
 import threading
 from pprint import pprint
 
-from src.config import offset_map, create_physical_mapping, inversion_map
+from src.config import PhysMap
 
 robot_connection_success = threading.Condition()
 
@@ -42,8 +42,6 @@ question_order: list[body_part] = ["left_arm", "right_arm", "left_leg", "right_l
 ornt = Literal["NORMAL", "INVERSE"]
 
 body = gecko_v2()
-body_mapping = create_physical_mapping(body)
-initial_hinge_positions = offset_map(body_mapping)
 body_map: dict[body_part, ActiveHingeV2] = {
         "right_arm": body.core_v2.right_face.bottom,
         "left_arm": body.core_v2.left_face.bottom,
@@ -74,7 +72,8 @@ BODY_QUESTIONS: dict[body_part, str] = {
 # This script generates the inversion map that matches was was scene in the 
 # simulation. It maps a pin to if the signal must be inverted or not
 invers_map: dict[int, bool] = {}
-prev_invers_map = inversion_map(body_mapping)
+pmap = PhysMap.map_with(body)
+prev_invers_map = {v["pin"]: v["is_inverse"] for k,v in pmap.items()}
 
 @dataclass 
 class CalibrationBrain(Brain):
@@ -92,7 +91,6 @@ class CalibrateBrainInstance(BrainInstance):
         if(question_idx == len(question_order)): exit()
         # continuously send 0 degree signal to all but current joint in question
         question_ctx = question_order[question_idx]
-        {control_interface.set_active_hinge_target(v["hinge"], 0) for k,v in body_mapping.items()}
     
         for q in question_order:
             if q == question_ctx:
@@ -141,7 +139,7 @@ def connect_to_robot():
         run_duration=9999,
         control_frequency=30,
         initial_hinge_positions={UUIDKey(v): 0 for k,v in body_map.items()},
-        inverse_servos=prev_invers_map,
+        inverse_servos={},
     )
 
     print("Initializing robot..")

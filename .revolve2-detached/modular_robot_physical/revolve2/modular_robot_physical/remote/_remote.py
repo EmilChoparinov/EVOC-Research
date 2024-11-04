@@ -245,9 +245,6 @@ async def _run_remote_impl(
                         imu_sensor_states=imu_sensor_states,
                         camera_sensor_states=camera_sensor_states
                     )
-                    
-                    print("State disabled")
-                    
 
                     if battery_print_timer > 5.0:
                         print(

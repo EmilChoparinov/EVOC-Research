@@ -3,9 +3,11 @@
 .swp
 .vscode/
 out/
-src/*.csv
-src/*.zip
-src/*.txt
+
+*.csv
+*.zip
+*log*.txt
+
 .swp
 
 ### JupyterNotebooks ###

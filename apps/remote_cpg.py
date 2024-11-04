@@ -38,14 +38,13 @@ from revolve2.modular_robot import ModularRobot, ModularRobotControlInterface
 from revolve2.modular_robot_physical import Config, UUIDKey
 from revolve2.modular_robot_physical.remote import run_remote
 
+from src.network_layer import remote_control_with_polling_rate
+from src.config import PhysMap
 
 import numpy as np
 
 import threading
 from pprint import pprint
-
-
-from src.config import create_physical_mapping, offset_map, inversion_map
 
 body = gecko_v2()
 body_map: dict[int, ActiveHingeV2] = {
@@ -111,22 +110,27 @@ robot = ModularRobot(
 def on_prepared() -> None:
     print("Robot is ready. Press enter to start")
     input()
-    
-initial_positions = offset_map(create_physical_mapping(body))
+pmap = PhysMap.map_with(body)
 config = Config(
     modular_robot=robot,
     hinge_mapping={UUIDKey(v): k for k,v in body_map.items()},
     run_duration=99999,
     control_frequency=30,
-    # initial_hinge_positions=initial_positions,
     initial_hinge_positions={UUIDKey(v): 0 for k,v in body_map.items()},
-    inverse_servos=inversion_map(create_physical_mapping(body)),
+    inverse_servos={v["pin"]: v["is_inverse"] for k,v in pmap.items()},
 )
 
 print("Initializing robot..")
-run_remote(
+remote_control_with_polling_rate(
     config=config,
+    port=20812,
     hostname="10.15.3.59",
-    debug=True,
-    on_prepared=on_prepared
+    rate=10
 )
+
+# run_remote(
+#     config=config,
+#     hostname="10.15.3.59",
+#     debug=True,
+#     on_prepared=on_prepared
+# )

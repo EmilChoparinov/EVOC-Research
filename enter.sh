@@ -5,12 +5,17 @@ if [ -d ".venv" ]; then
     source "$PWD/.venv/bin/activate"
     echo "Using $PWD/.venv/bin/activate"
 else
-    echo "Creating a new virtual environment..."
-    python3 -m pip install virtualenv
-    python3 -m virtualenv .venv
+    echo "===== Creating a new virtual environment ====="
+    python3 -m venv .venv
     source .venv/bin/activate
-    echo "Made $PWD/.venv/bin/activate"
+    echo "===== Made $PWD/.venv/bin/activate ====="
+    echo "===== INSTALLING \`.mulitneat-detached\` ====="
+    cd .multineat-detached
+    pip install .
+    cd ..
+    echo "===== INSTALLING \`.revolve2-detached\` ====="    
     cd .revolve2-detached
     sh student_install.sh
     cd ..
+    echo "All done! You can now use `source enter.sh` to enter without re-installation."
 fi

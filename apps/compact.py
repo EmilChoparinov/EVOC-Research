@@ -31,7 +31,7 @@ import numpy as np
 import threading
 from pprint import pprint
 
-from src.config import offset_map, create_physical_mapping, inversion_map
+from src.config import PhysMap
 
 robot_connection_success = threading.Condition()
 
@@ -43,8 +43,6 @@ question_order: list[body_part] = ["left_arm", "right_arm", "left_leg", "right_l
 ornt = Literal["NORMAL", "INVERSE"]
 
 body = gecko_v2()
-body_mapping = create_physical_mapping(body)
-initial_hinge_positions = offset_map(body_mapping)
 body_map: dict[body_part, ActiveHingeV2] = {
         "right_arm": body.core_v2.right_face.bottom,
         "left_arm": body.core_v2.left_face.bottom,
@@ -79,13 +77,15 @@ def on_prepared() -> None:
 brain = BrainDummy()
 robot = ModularRobot(body, brain)
 
+pmap = PhysMap.map_with(body)
+
 config = Config(
     modular_robot=robot,
     hinge_mapping={UUIDKey(v): PIN_CONFIG[k] for k,v in body_map.items()},
     run_duration=9999,
     control_frequency=30,
     initial_hinge_positions={UUIDKey(v): compact_pos[PIN_CONFIG[k]] for k,v in body_map.items()},
-    inverse_servos=inversion_map(body_mapping),
+    inverse_servos={v["pin"]: v["is_inverse"] for k,v in pmap.items()}
 )
 
 print("Initializing robot..")

@@ -62,7 +62,7 @@ from dataclasses import dataclass
 def generate_cma() -> cma.CMAEvolutionStrategy:
     initial_mean = cpg_network_struct.num_connections * [0.0]
     initial_std = 0.5
-    bounds = [-2.5, 2.5]
+    bounds = [-3.5, 3.5]
     population = 10
     
     # CMA seed is constrained to be smaller than 2**32

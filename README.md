@@ -16,7 +16,7 @@ There are multiple directories.
 sudo pacman -S cereal
 
 # apt
-sudo apt install cereal
+sudo apt install libcereal-dev
 ```
 
 - Compatible with: Linux, MacOS Sequoia, Windows 10/11 (Under WSL)

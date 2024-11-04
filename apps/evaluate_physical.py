@@ -105,9 +105,9 @@ class BatchTesterBrainInstance(BrainInstance):
         
         # After 30 seconds, we progress to the next CPG
         if(self.dt0 > 30):
-            idx += 1
+            self.idx += 1
             # If idx reached the end, quit
-            if(idx == len(brains)): 
+            if(self.idx == len(brains)): 
                 print("Test complete. Shutting down")
                 exit()
             print("Loading next...")

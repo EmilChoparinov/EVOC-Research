@@ -110,18 +110,17 @@ class BatchTesterBrainInstance(BrainInstance):
             self.dt0 += dt
         else:
             self.capture_dt = True
+            input(f"Loaded CPG Index: {self.idx}. Press enter to start test next test")
         
         # After 30 seconds, we progress to the next CPG
         if(self.dt0 > 5):
             self.idx += 1
             # If idx reached the end, quit
-            import pdb;pdb.set_trace()
             if(self.idx == len(self.brains)):
                 print("Test complete. Shutting down")
                 exit()
             print("Loading next...")
             [control_interface.set_active_hinge_target(h, 0) for h in self.hinges]
-            input(f"Loaded CPG Index: {self.idx}. Press enter to start test next test")
             
             # Reset dt states
             self.dt0 = 0

@@ -125,7 +125,7 @@ class BatchTesterBrainInstance(BrainInstance):
             
             # Reset dt states
             self.dt0 = 0
-            self.ignore_dt = True
+            self.capture_dt = True
             return
 
         self.brains[self.idx].control(dt, sensor_state, control_interface)

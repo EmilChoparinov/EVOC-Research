@@ -264,7 +264,7 @@ def evaluate_angle_with_projection_with_z_avg(
     def evalf(robot: ModularRobot, states: simulated_behavior):
         # return get_pose_cumulative_maximal_rotation(robot, states)
         # print(f"{get_pose_maximal_rotation_filter_dir(robot, states, go_left=False)=} - {get_pose_muscle_effiency(robot, states)=}")
-        return get_pose_maximal_rotation_filter_dir(robot, states, go_left=True) - get_pose_muscle_effiency(robot, states)
+        return get_pose_maximal_rotation_filter_dir(robot, states, go_left=False) - get_pose_muscle_effiency(robot, states)
 
 
         _,_,origin_z = get_robot_euclidian_head(robot, states[0])

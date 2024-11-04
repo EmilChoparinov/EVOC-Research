@@ -104,7 +104,8 @@ class BatchTesterBrainInstance(BrainInstance):
         # import pdb;pdb.set_trace()
         if self.capture_dt:
             self.dt0 += dt
-            self.capture_dt = False
+        else:
+            self.capture_dt = True
         
         # After 30 seconds, we progress to the next CPG
         if(self.dt0 > 5):

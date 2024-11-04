@@ -72,7 +72,6 @@ def generate_cma() -> cma.CMAEvolutionStrategy:
     
     return cma.CMAEvolutionStrategy(initial_mean, initial_std, options)
 
-
 def body_to_csv_map(body: BodyV2): 
     return  {
         "head": body.core_v2,

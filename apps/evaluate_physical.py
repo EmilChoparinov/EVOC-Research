@@ -86,6 +86,7 @@ class BatchTesterBrain(Brain):
 class BatchTesterBrainInstance(BrainInstance):
     hinges: list[ActiveHinge]
     brains: list[BrainInstance]
+    # Time since 0 (when run starts)
     dt0: float = 0
     idx: int = 0
     
@@ -104,15 +105,19 @@ class BatchTesterBrainInstance(BrainInstance):
             self.ignore_dt = False
         
         # After 30 seconds, we progress to the next CPG
-        if(self.dt0 > 30):
+        if(self.dt0 > 5):
             self.idx += 1
             # If idx reached the end, quit
-            if(self.idx == len(brains)): 
+            import pdb;pdb.set_trace()
+            if(self.idx == len(self.brains)):
                 print("Test complete. Shutting down")
                 exit()
             print("Loading next...")
             [control_interface.set_active_hinge_target(h, 0) for h in self.hinges]
             input(f"Loaded CPG Index: {self.idx}. Press enter to start test next test")
+            
+            # Reset dt states
+            self.dt0 = 0
             self.ignore_dt = True
             return
 

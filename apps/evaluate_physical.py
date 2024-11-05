@@ -50,10 +50,13 @@ import math
 
 # All of these are recorded at 200 generations
 batch_cpg_params = [
-    [-2.49991299,  0.44331288, -0.01261823, -0.01098447,  0.13277421,
-       -2.4828977 ,  2.30644179, -2.1834448 , -1.42267434],
-    [-2.49008386,  0.14421721,  1.30498339, -1.22142535,  1.12780339,
-        0.56658266,  2.44446142, -2.42483038, -1.33595407]
+    [-2.47124768,  0.17264671,  0.30393733, -0.12812158, -1.27522738,
+       -0.32205638,  2.25565595, -2.4977165 , -1.62010596], # -1.61
+    [-1.98907633, -0.21464625,  0.00993038, -0.0145763 ,  1.46751641,
+            1.65157093,  1.98277571, -1.93597174, -1.1197288 ], # -1.91
+    [-1.99671427e+00,  4.54036835e-01, -9.78451406e-03,  4.62432356e-04,
+        1.06113886e+00,  1.86055620e+00,  1.59448163e+00, -1.99802220e+00,
+       -1.42364389e+00] # 1.85
 ]
 
 body = gecko_v2()
@@ -91,34 +94,41 @@ class BatchTesterBrainInstance(BrainInstance):
     idx: int = 0
     
     # We pause the robots movements between experiments
-    ignore_dt: bool = False
+    capture_dt: bool = True
     
+    # Yup, blame netcode not me
+    spam_times: int = 20
+
     def control(
         self, 
         dt: float, 
         sensor_state: ModularRobotSensorState, 
         control_interface: ModularRobotControlInterface
     ) -> None:
-        # import pdb;pdb.set_trace()
-        if not self.ignore_dt:
+        if self.spam_times > 0:
+            [control_interface.set_active_hinge_target(h, 0) for h in self.hinges]
+            self.spam_times -= 1
+            return
+        
+        if self.capture_dt:
             self.dt0 += dt
-            self.ignore_dt = False
+        else:
+            self.capture_dt = True
+            input(f"Loaded CPG Index: {self.idx}. Press enter to start test next test")
         
         # After 30 seconds, we progress to the next CPG
         if(self.dt0 > 5):
             self.idx += 1
             # If idx reached the end, quit
-            import pdb;pdb.set_trace()
             if(self.idx == len(self.brains)):
                 print("Test complete. Shutting down")
                 exit()
             print("Loading next...")
-            [control_interface.set_active_hinge_target(h, 0) for h in self.hinges]
-            input(f"Loaded CPG Index: {self.idx}. Press enter to start test next test")
             
             # Reset dt states
+            self.spam_times = 20
             self.dt0 = 0
-            self.ignore_dt = True
+            self.capture_dt = False
             return
 
         self.brains[self.idx].control(dt, sensor_state, control_interface)

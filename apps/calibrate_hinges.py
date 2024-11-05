@@ -76,7 +76,7 @@ def on_prepared() -> None:
 
 config = Config(
     modular_robot=robot,
-    hinge_mapping={UUIDKey(v["hinge"]): v["pin"] for k,v in body_map.items()},
+    hinge_mapping={UUIDKey(v): k for k,v in body_map.items()},
     run_duration=99999,
     control_frequency=30,
     initial_hinge_positions={UUIDKey(v): 0 for k,v in body_map.items()},

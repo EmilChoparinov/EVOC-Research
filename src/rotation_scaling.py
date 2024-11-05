@@ -147,13 +147,11 @@ def size_scaling(df: pd.DataFrame) -> pd.DataFrame:
         elif isinstance(data_dict, pd.DataFrame) or isinstance(data_dict, pd.Series):
             keypoints = data_dict[['X (relative)', 'Y (relative)']].values.flatten()
 
-        return np.array(keypoints).flatten()  # 将二维坐标转为一维向量
+        return np.array(keypoints).flatten()  
 
     global_max_distance_animal = 168.13387523042465
-
-    global_max_distances = {i: 0 for i in range(10)}  # Initialize max distances for each robot index from 0 to 9
+    global_max_distances = {i: 0 for i in range(10)}  
     coordinates_2_list = []
-
 
     for index, frame in df.iterrows():
         coordinates_2 = {
@@ -171,10 +169,8 @@ def size_scaling(df: pd.DataFrame) -> pd.DataFrame:
 
         coordinates_2_list.append(coordinates_2)
 
-        # Retrieve robot_index for the frame
         robot_index = frame.get('robot_index', np.nan)
 
-        # Calculate the max distance for this robot index
         if not np.isnan(robot_index):
             robot_head = np.array(coordinates_2['head']).astype(float)
             robot_boxes = np.array([coordinates_2[box_name] for box_name in
@@ -183,49 +179,29 @@ def size_scaling(df: pd.DataFrame) -> pd.DataFrame:
             robot_distances = np.linalg.norm(robot_boxes - robot_head, axis=1)
             max_distance_robot = np.max(robot_distances)
 
-            # Update the max distance for this robot_index if this distance is larger
             robot_index = int(robot_index)
             if max_distance_robot > global_max_distances[robot_index]:
                 global_max_distances[robot_index] = max_distance_robot
 
     print(f'Global maximum distances per robot_index: {global_max_distances}')
 
-
     scaled_robot_data = []
-    first_frame_scaled_coordinates = None
-    first_frame_robot_coordinates = None
+    first_robot_head = np.array(coordinates_2_list[0]['head']).reshape(1, 2)
 
     for i in range(len(coordinates_2_list)):
         robot_coordinates = extract_keypoints(coordinates_2_list[i])
-        robot_head = coordinates_2_list[i]['head']
-
         robot_index = df.iloc[i].get('robot_index', np.nan)
 
-        max_distance_robot = global_max_distances.get(int(robot_index), 1)  
-
-
+        max_distance_robot = global_max_distances.get(int(robot_index), 1)
         robot_coordinates = robot_coordinates.reshape(-1, 2)
-        robot_head = np.array(robot_head).reshape(1, 2)
-        scaled_robot_coordinates = (robot_coordinates - robot_head) * (
-                global_max_distance_animal / max_distance_robot) + robot_head
-
-
-        if i == 0:
-            first_frame_scaled_coordinates = scaled_robot_coordinates.copy()
-            first_frame_robot_coordinates = robot_coordinates.copy()
-            scaled_robot_coordinates[0] = (0, 0)
-        else:
-            if first_frame_scaled_coordinates is None or first_frame_robot_coordinates is None:
-                continue
-            for j in range(robot_coordinates.shape[0]):
-                scaled_robot_coordinates[j] = first_frame_scaled_coordinates[j] + (
-                        robot_coordinates[j] - first_frame_robot_coordinates[j])
+        scaled_robot_coordinates = (robot_coordinates - first_robot_head ) * (
+                global_max_distance_animal / max_distance_robot) + first_robot_head
 
         scaled_robot_data.append({
+            'head': tuple(scaled_robot_coordinates[0]),
             'Frame': i,
             'robot_index': robot_index,
 
-            'head': tuple(scaled_robot_coordinates[0]),
             'middle': tuple(scaled_robot_coordinates[1]),
             'rear': tuple(scaled_robot_coordinates[2]),
             'right_front': tuple(scaled_robot_coordinates[3]),
@@ -234,6 +210,6 @@ def size_scaling(df: pd.DataFrame) -> pd.DataFrame:
             'left_hind': tuple(scaled_robot_coordinates[6]),
         })
 
-    scaled_robot_data=pd.DataFrame(scaled_robot_data)
-    # print(scaled_robot_data.head(5))
+    scaled_robot_data = pd.DataFrame(scaled_robot_data)
+    print(scaled_robot_data.head(10))
     return scaled_robot_data

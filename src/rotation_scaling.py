@@ -67,7 +67,7 @@ def get_data_with_forward_center(robots: List[ModularRobot], behaviors: List) ->
     pd_coord_list['center_y'] = pd_coord_list[y_columns].mean(axis=1)
     pd_coord_list["forward_x"] = pd_coord_list["head_x"] - pd_coord_list["center_x"]
     pd_coord_list["forward_y"] = pd_coord_list["head_x"] - pd_coord_list["center_x"]
-    print(pd_coord_list.head(11))
+    # print(pd_coord_list.head(11))
     return pd_coord_list
 
 
@@ -122,17 +122,16 @@ def translation_rotation(df: pd.DataFrame) -> pd.DataFrame:
         # Append transformed points for the current row
         transformed_data.append(transformed_points)
     transformed_data=pd.DataFrame(transformed_data)
-    print(transformed_data.head(20))
+    # print(transformed_data.head(20))
     return transformed_data
 
 def fitness_scaling(fitnesses: npt.NDArray[np.float_]):
     min_f = np.min(fitnesses)
     max_f = np.max(fitnesses)
     scaled_fitness = (fitnesses - min_f) / (max_f - min_f)
-    print('fitnesses',fitnesses)
-    print('scaled_fitnesses',scaled_fitness)
+    # print('fitnesses',fitnesses)
+    # print('scaled_fitnesses',scaled_fitness)
     return scaled_fitness
-
 
 def size_scaling(df: pd.DataFrame) -> pd.DataFrame:
     def parse_tuple_string(s):
@@ -151,8 +150,10 @@ def size_scaling(df: pd.DataFrame) -> pd.DataFrame:
         return np.array(keypoints).flatten()  # 将二维坐标转为一维向量
 
     global_max_distance_animal = 168.13387523042465
+
     global_max_distances = {i: 0 for i in range(10)}  # Initialize max distances for each robot index from 0 to 9
     coordinates_2_list = []
+
 
     for index, frame in df.iterrows():
         coordinates_2 = {
@@ -189,6 +190,7 @@ def size_scaling(df: pd.DataFrame) -> pd.DataFrame:
 
     print(f'Global maximum distances per robot_index: {global_max_distances}')
 
+
     scaled_robot_data = []
     first_frame_scaled_coordinates = None
     first_frame_robot_coordinates = None
@@ -196,16 +198,17 @@ def size_scaling(df: pd.DataFrame) -> pd.DataFrame:
     for i in range(len(coordinates_2_list)):
         robot_coordinates = extract_keypoints(coordinates_2_list[i])
         robot_head = coordinates_2_list[i]['head']
+
         robot_index = df.iloc[i].get('robot_index', np.nan)
 
-        # Determine scaling factor for the current robot_index
-        max_distance_robot = global_max_distances.get(int(robot_index), 1)  # Default to 1 if robot_index is invalid
+        max_distance_robot = global_max_distances.get(int(robot_index), 1)  
 
-        # 将关键点重构为2D坐标格式
+
         robot_coordinates = robot_coordinates.reshape(-1, 2)
         robot_head = np.array(robot_head).reshape(1, 2)
         scaled_robot_coordinates = (robot_coordinates - robot_head) * (
                 global_max_distance_animal / max_distance_robot) + robot_head
+
 
         if i == 0:
             first_frame_scaled_coordinates = scaled_robot_coordinates.copy()
@@ -221,6 +224,7 @@ def size_scaling(df: pd.DataFrame) -> pd.DataFrame:
         scaled_robot_data.append({
             'Frame': i,
             'robot_index': robot_index,
+
             'head': tuple(scaled_robot_coordinates[0]),
             'middle': tuple(scaled_robot_coordinates[1]),
             'rear': tuple(scaled_robot_coordinates[2]),
@@ -230,6 +234,6 @@ def size_scaling(df: pd.DataFrame) -> pd.DataFrame:
             'left_hind': tuple(scaled_robot_coordinates[6]),
         })
 
-    scaled_robot_data = pd.DataFrame(scaled_robot_data)
-    print(scaled_robot_data.head(5))
+    scaled_robot_data=pd.DataFrame(scaled_robot_data)
+    # print(scaled_robot_data.head(5))
     return scaled_robot_data

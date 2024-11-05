@@ -139,7 +139,7 @@ def connect_to_robot():
         run_duration=9999,
         control_frequency=30,
         initial_hinge_positions={UUIDKey(v): 0 for k,v in body_map.items()},
-        inverse_servos={},
+        inverse_servos={0: True, 1: False, 8: False, 24: False, 30: True, 31: False}
     )
 
     print("Initializing robot..")

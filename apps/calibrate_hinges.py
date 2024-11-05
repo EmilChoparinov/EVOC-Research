@@ -72,14 +72,15 @@ robot = ModularRobot(body, brain)
 def on_prepared() -> None:
     print("Robot is ready. Press enter to start")
     input()
-    
+
+
 config = Config(
     modular_robot=robot,
-    hinge_mapping={UUIDKey(v["hinge"]): v["pin"] for k,v in pmap},
+    hinge_mapping={UUIDKey(v["hinge"]): v["pin"] for k,v in body_map.items()},
     run_duration=99999,
     control_frequency=30,
-    initial_hinge_positions={UUIDKey(v): 0 for k,v in pmap},
-    inverse_servos={UUIDKey(v["hinge"]): v["is_inverse"] for k,v in pmap}
+    initial_hinge_positions={UUIDKey(v): 0 for k,v in body_map.items()},
+    inverse_servos={0: True, 1: False, 8: False, 24: False, 30: True, 31: False}
 )
 
 print("Initializing robot..")

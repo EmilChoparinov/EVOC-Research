@@ -7,8 +7,17 @@ There are multiple directories.
 - `/apps` contains python apps that interact with the simulation or the physical robot
 
 ## Prerequisites
-- A valid version of python required. I am under `3.10.12`. You can check by doing `python3 --version`.
+- A valid version of python required. I am under `3.10.12`. You can check by doing `python3 --version`. NOTE: `Python 3.12.x` do not work. `Revolve2-standards` requires either 3.10.x or 3.11.x.
 
+- A dependency attached to this repository from the CI-Group, MultiNEAT is required for installing
+  Revolve2. You can get it on Linux or Mac with the following commands:
+```
+# pacman
+sudo pacman -S cereal
+
+# apt
+sudo apt install cereal
+```
 
 - Compatible with: Linux, MacOS Sequoia, Windows 10/11 (Under WSL)
 

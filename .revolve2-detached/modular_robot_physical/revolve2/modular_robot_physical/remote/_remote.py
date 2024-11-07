@@ -227,14 +227,14 @@ async def _run_remote_impl(
                     ).response
                     print(f"sensor collection step took: {time.time()- start:.4f} seconds")
 
-                    # imu_sensor_states = _get_imu_sensor_state(
-                    #     config.modular_robot.body.core.sensors.imu_sensor,
-                    #     sensor_readings,
-                    # )
-                    # camera_sensor_states = _get_camera_sensor_state(
-                    #     config.modular_robot.body.core.sensors.camera_sensor,
-                    #     sensor_readings,
-                    # )
+                    imu_sensor_states = _get_imu_sensor_state(
+                        config.modular_robot.body.core.sensors.imu_sensor,
+                        sensor_readings,
+                    )
+                    camera_sensor_states = _get_camera_sensor_state(
+                        config.modular_robot.body.core.sensors.camera_sensor,
+                        sensor_readings,
+                    )
 
                     sensor_state = ModularRobotSensorStateImplV2(
                         hinge_sensor_mapping=active_hinge_sensor_to_pin,
@@ -242,12 +242,9 @@ async def _run_remote_impl(
                             pin: position
                             for pin, position in zip(pins, sensor_readings.pins)
                         },
-                        imu_sensor_states=None,
-                        camera_sensor_states=None
+                        imu_sensor_states=imu_sensor_states,
+                        camera_sensor_states=camera_sensor_states
                     )
-                    
-                    print("State disabled")
-                    
 
                     if battery_print_timer > 5.0:
                         print(

@@ -8,14 +8,39 @@ from torch.utils.data import DataLoader, Dataset
 import glob
 import random
 import ast
+from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.spatial.distance import cdist
+
+def VAE_similarity(df_robot: pd.DataFrame, df_animal: pd.DataFrame) -> list:
+    df_robot = df_robot.drop(columns=['frame'], errors='ignore')
+    df_animal = df_animal.drop(columns=['frame'], errors='ignore')
+    df_animal = df_animal.drop(columns=['robot_index'], errors='ignore')
+
+    if 'robot_index' not in df_robot.columns:
+        raise ValueError("df_robot DataFrame must contain 'robot_index' column.")
+
+    similarities = []
+    animal_vectors = df_animal.values
+    for robot_index, group_robot in df_robot.groupby('robot_index'):
+        robot_vectors = group_robot.drop(columns=['robot_index']).values
+        distances = cdist(robot_vectors, animal_vectors, metric='euclidean')
+        avg_distance = distances.mean()
+        similarities.append(avg_distance)
+
+    print('VAE_similarity',similarities)
+    return similarities
+
 
 def infer_on_csv(df: pd.DataFrame) -> pd.DataFrame:
-    scale_data = df
+    scale_data = df.copy()
 
     for column in ['head', 'middle', 'rear', 'left_front', 'right_front', 'left_hind', 'right_hind']:
         scale_data[column] = scale_data[column].apply(parse_tuple_string)
 
     coordinates_robot_list = []
+    robot_indices = []
     for index, frame in scale_data.iterrows():
         coordinates_2 = {
             'head': frame.get('head'),
@@ -27,7 +52,7 @@ def infer_on_csv(df: pd.DataFrame) -> pd.DataFrame:
             'right_hind': frame.get('right_hind'),
         }
         coordinates_robot_list.append(coordinates_2)
-
+        robot_indices.append(frame.get('robot_index'))
     coords_array = KeypointsDataset(coordinates_robot_list)
 
     embedding_vectors = []
@@ -36,22 +61,18 @@ def infer_on_csv(df: pd.DataFrame) -> pd.DataFrame:
     input_dim = 14 * 5
     vae_loaded = VAE(input_dim, latent_dim)
     model_save_path = './src/model/vae_model.pth'
-    vae_loaded.load_state_dict(torch.load(model_save_path, weights_only=True))  # 设置 weights_only=True
+    vae_loaded.load_state_dict(torch.load(model_save_path, weights_only=True)) 
+    vae_loaded.eval()
 
-    vae_loaded.eval()  # Set to evaluation mode
     with torch.no_grad():
         for j in range(len(coords_array)):
             sample_data, mean, std = coords_array[j]
-            original_animal_keypoints = sample_data.numpy()
-            # Get the embedding vector (latent representation) using trained VAE
             _, _, _, z_animal = vae_loaded(sample_data.unsqueeze(0))
             embedding_vector = z_animal.squeeze().numpy()
 
-            # Append the frame index and the embedding vector to the list
-            embedding_vectors.append([j] + embedding_vector.tolist())
+            embedding_vectors.append([j, robot_indices[j]] + embedding_vector.tolist())
 
-    # Convert embedding vectors to DataFrame
-    latent_df = pd.DataFrame(embedding_vectors, columns=['frame'] + [f'latent_{k}' for k in range(latent_dim)])
+    latent_df = pd.DataFrame(embedding_vectors, columns=['frame', 'robot_index'] + [f'latent_{k}' for k in range(latent_dim)])
     print(latent_df.head(3))
     return latent_df
 
@@ -162,3 +183,28 @@ def vae_loss(recon_x, x, mu, logvar, beta=0.001):
     kl_divergence = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
     return recon_loss + beta * kl_divergence
 
+def plot_fitness(distance_all, animal_similarity_all):
+    max_distances = [np.min(distance) for distance in distance_all]
+    max_similarities = [np.min(similarity) for similarity in animal_similarity_all]
+
+    sum_values = [0.7 * max_distance + 0.3 * max_similarity for max_distance, max_similarity in
+                  zip(max_distances, max_similarities)]
+    print("Max distances:", max_distances)
+    print("Max similarities:", max_similarities)
+    iterations = np.arange(1, len(distance_all) + 1)
+
+    plt.figure(figsize=(10, 6))
+
+    plt.plot(iterations, max_distances, label="Distance", color='blue', marker='o')
+
+    plt.plot(iterations, max_similarities, label="Animal Similarity", color='green', marker='x')
+
+    plt.plot(iterations, sum_values, label="Sum of Distance & Animal Similarity", color='red', marker='s')
+
+    plt.title("Fitness Plot: Distance vs Animal Similarity")
+    plt.xlabel("Generation")
+    plt.ylabel("Max Value")
+
+    # plt.xticks(iterations)
+    plt.legend()
+    plt.show()

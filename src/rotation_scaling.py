@@ -8,11 +8,7 @@ from revolve2.modular_robot.brain.cpg import BrainCpgNetworkStatic
 from revolve2.modular_robot_simulation import ModularRobotScene, simulate_scenes
 from revolve2.standards.simulation_parameters import make_standard_batch_parameters
 
-import logging
-import math
-
 import ast
-from typedef import simulated_behavior, genotype
 from typing import Tuple, List
 
 import config
@@ -52,14 +48,10 @@ def get_data_with_forward_center(robots: List[ModularRobot], behaviors: List) ->
                 coord_dict[col + '_x'] = abs_pose.position.x
                 coord_dict[col + '_y'] = abs_pose.position.y
 
-            # Append the dictionary to the list
             robot_coord_list.append(coord_dict)
 
-    # Create a DataFrame from the list of dictionaries
     pd_coord_list = pd.DataFrame(robot_coord_list)
 
-    # Calculate center for each robot based on coordinates
-    # Here, you may want to average over all body parts
     x_columns = [col + '_x' for col in columns]
     y_columns = [col + '_y' for col in columns]
 
@@ -72,7 +64,6 @@ def get_data_with_forward_center(robots: List[ModularRobot], behaviors: List) ->
 
 
 def translation_rotation(df: pd.DataFrame) -> pd.DataFrame:
-    # Initialize a list to hold transformed points
     transformed_data = []
     # Extract relevant points directly from the DataFrame
     head_first_x = df['head_x'].iloc[0]
@@ -119,19 +110,30 @@ def translation_rotation(df: pd.DataFrame) -> pd.DataFrame:
             except Exception as e:
                 print(f"Error parsing {point_name} with value {point_value}: {e}")
 
-        # Append transformed points for the current row
         transformed_data.append(transformed_points)
     transformed_data=pd.DataFrame(transformed_data)
     # print(transformed_data.head(20))
     return transformed_data
 
-def fitness_scaling(fitnesses: npt.NDArray[np.float_]):
-    min_f = np.min(fitnesses)
-    max_f = np.max(fitnesses)
-    scaled_fitness = (fitnesses - min_f) / (max_f - min_f)
-    # print('fitnesses',fitnesses)
-    # print('scaled_fitnesses',scaled_fitness)
-    return scaled_fitness
+# def fitness_scaling(fitnesses: npt.NDArray[np.float_]):
+#     min_f = np.min(fitnesses)
+#     max_f = np.max(fitnesses)
+#     scaled_fitness = (fitnesses - min_f) / (max_f - min_f)
+#     # print('fitnesses',fitnesses)
+#     # print('scaled_fitnesses',scaled_fitness)
+#     return scaled_fitness
+
+
+def fitness_standardization(fitnesses: npt.NDArray[np.float_]):
+    mean_f = np.mean(fitnesses)
+    std_f = np.std(fitnesses)
+    if std_f == 0:
+        return fitnesses
+
+    standardized_fitness = (fitnesses - mean_f) / std_f
+    return standardized_fitness
+
+
 
 def size_scaling(df: pd.DataFrame) -> pd.DataFrame:
     def parse_tuple_string(s):
@@ -211,5 +213,5 @@ def size_scaling(df: pd.DataFrame) -> pd.DataFrame:
         })
 
     scaled_robot_data = pd.DataFrame(scaled_robot_data)
-    print(scaled_robot_data.head(10))
+    print(scaled_robot_data.head(3))
     return scaled_robot_data

@@ -48,7 +48,10 @@ from rotation_scaling import get_data_with_forward_center,translation_rotation
 
 
 # TODO: This function has been primed to be embarrassingly parallel if more performance required.
-def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt):
+# def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt):
+def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt, fitness_function: str = "distance",
+                             alpha: float = 1.0):
+
     if(max_runs == 0): return
 
     # record data
@@ -80,8 +83,36 @@ def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt):
         translation_rotation(get_data_with_forward_center(robots, behaviors))
         # TODO scaling
         
-        fitnesses = -evaluate.evaluate(robots, behaviors)
+        #fitnesses = -evaluate.evaluate(robots, behaviors)
+        fitnesses = None
+
+        if fitness_function == "distance":
+            fitnesses = -evaluate.evaluate_distance(robots, behaviors)
+        elif fitness_function == "similarity":
+            fitnesses = -evaluate.evaluate_similarity(robots, behaviors)
+        elif fitness_function == "blended":
+            # Calculate the weighted average of the two adaptations, weights determined by alpha
+            distance_fitness = evaluate.evaluate_distance(robots, behaviors)
+            similarity_fitness = evaluate.evaluate_similarity(robots, behaviors)
+            fitnesses = -((alpha * distance_fitness) + ((1 - alpha) * similarity_fitness))
+
+        if fitnesses is None:
+            raise ValueError(
+                "Fitnesses could not be calculated. Please check the fitness_function value and corresponding evaluation functions.")
+
         cma_es.tell(solutions, fitnesses)
+
+        # Find the most fit individual of this generation
+        best_robot, best_behavior, best_fitness = evaluate.find_most_fit(fitnesses, robots, behaviors)
+
+        # Data Collection Step
+        data_collection.record_behavior(
+            best_robot, best_fitness, best_behavior, generation_id=generation_i, alpha=alpha,
+            fitness_function=fitness_function)
+
+        data_collection.record_elite_generations(
+            run_id=max_runs, generation=generation_i, fitness=best_fitness, matrix=best_robot.brain._weight_matrix,
+            alpha=alpha, fitness_function=fitness_function)
 
         # top 3 fitness and corresponding robots and weight matrices
         top_3_indices = sorted(range(len(fitnesses)), key=lambda i: fitnesses[i], reverse=True)[:3]
@@ -90,16 +121,9 @@ def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt):
         for i, (robot, fitness, weights_matrix) in enumerate(top_3_list):
             record_elite_generations(run_id=max_runs, generation=generation_i, fitness=fitness, matrix=weights_matrix)
 
-        # Data Collection Step
-        best_robot, best_behavior, best_fitness = evaluate.find_most_fit(
-            fitnesses, robots, behaviors)
-        
         logging.info(f"{cma_es.result.xbest=}\n{cma_es.result.fbest=}")
-        
-        data_collection.record_behavior(
-            best_robot, best_fitness, best_behavior, generation_id=generation_i)
-        
-        # We want to record the best CPG seen throughout the entire EA run
+
+        # Record CPG configuration at the end of the EA run
         if(generation_i + 1 == max_gen):
             data_collection.record_cpg(best_robot, max_runs)
         
@@ -108,7 +132,7 @@ def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt):
         config.write_buffer.to_csv(behavior_csv, index=False, header=False, mode='a')
         config.write_buffer.drop(config.write_buffer.index, inplace=True)
     
-    # We do not need to flush the buffer at this step because it's always the
+    # Do not need to flush the buffer at this step because it's always the
     # last thing the loop does.
     logging.info(f"EA Iteration {max_runs} complete")
     

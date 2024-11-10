@@ -40,24 +40,20 @@ def evaluate_similarity(robots: list[ModularRobot], behaviors: list[simulated_be
     Calculate the fitness based on the similarity to a dynamic ideal behavior.
     The ideal behavior is dynamically determined as an offset from the initial position.
     """
-    offset_distance = 1.0  # 假设理想偏移距离为1.0，可以根据需要调整
+    offset_distance = 1.0  #
     similarity_scores = []
 
     for robot, states in zip(robots, behaviors):
-        # 获取机器人的初始位置
+        # initial position
         start_position = states[0].get_modular_robot_simulation_state(robot).get_pose().position
-        # 动态计算理想终点位置为初始位置沿 x 轴偏移 offset_distance 的位置
         ideal_position = np.array([start_position.x + offset_distance, start_position.y, start_position.z])
 
-        # 获取机器人的最终位置
         end_position = states[-1].get_modular_robot_simulation_state(robot).get_pose().position
         end_position_array = np.array([end_position.x, end_position.y, end_position.z])
 
-        # 计算最终位置与理想位置的偏差
         deviation = np.linalg.norm(end_position_array - ideal_position)
 
-        # 将偏差转换为相似度分数
-        similarity_score = 1 / (1 + deviation)  # 偏差越小，相似度越高
+        similarity_score = 1 / (1 + deviation)
         similarity_scores.append(similarity_score)
 
     return np.array(similarity_scores)

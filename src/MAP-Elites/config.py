@@ -5,8 +5,10 @@ from revolve2.standards import terrains
 from revolve2.standards.modular_robots_v2 import gecko_v2
 
 
-population_size = 10
-nr_of_generations = 10000
+nr_of_generations = 1000000
+max_population_size = 500 # Actually is 1000, but I want to make the initialization process faster.
+nr_of_offsprings = 20
+tournament_size_for_selection_of_the_parents = 3
 
 body_shape = gecko_v2()
 

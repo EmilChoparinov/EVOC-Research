@@ -8,21 +8,25 @@ def calculate_fitness_and_metrics(robots, behaviors):
 
     return fitness_and_metrics
 
-def calculate(robot, behavior):
-    modules = [robot.body.core_v2,                               # head
-              robot.body.core_v2.left_face.bottom.attachment,    # left_front
-              robot.body.core_v2.right_face.bottom.attachment,   # right_front
-              robot.body.core_v2.back_face.bottom.attachment,    # middle
-              robot.body.core_v2.back_face.bottom.attachment.front.attachment,                  # rear
-              robot.body.core_v2.back_face.bottom.attachment.front.attachment.left.attachment,  # left_hind
-              robot.body.core_v2.back_face.bottom.attachment.front.attachment.right.attachment, # right_hind
-              ]
+def get_fitness_and_positions(robot, behavior):
+    modules = [robot.body.core_v2,  # head
+               robot.body.core_v2.left_face.bottom.attachment,  # left_front
+               robot.body.core_v2.right_face.bottom.attachment,  # right_front
+               robot.body.core_v2.back_face.bottom.attachment,  # middle
+               robot.body.core_v2.back_face.bottom.attachment.front.attachment,  # rear
+               robot.body.core_v2.back_face.bottom.attachment.front.attachment.left.attachment,  # left_hind
+               robot.body.core_v2.back_face.bottom.attachment.front.attachment.right.attachment,  # right_hind
+               ]
     fitness = xy_displacement(behavior[0].get_modular_robot_simulation_state(robot),
                               behavior[-1].get_modular_robot_simulation_state(robot))
 
     head_positions = []
-    left_front_positions = []; right_front_positions = []; middle_positions = []
-    rear_positions = []; left_hind_positions = []; right_hind_positions = []
+    left_front_positions = [];
+    right_front_positions = [];
+    middle_positions = []
+    rear_positions = [];
+    left_hind_positions = [];
+    right_hind_positions = []
     for i in range(len(behavior)):
         element = behavior[i].get_modular_robot_simulation_state(robot)
 
@@ -54,6 +58,12 @@ def calculate(robot, behavior):
         xyz_position = element.get_module_absolute_pose(modules[6]).position
         right_hind_positions.append((xyz_position[0], xyz_position[1]))
 
+    return (fitness, head_positions, left_front_positions, right_front_positions, middle_positions,
+                          rear_positions, left_hind_positions, right_hind_positions)
+
+def calculate(robot, behavior):
+    (fitness, head_positions, left_front_positions, right_front_positions, middle_positions,
+    rear_positions, left_hind_positions, right_hind_positions) = get_fitness_and_positions(robot, behavior)
     metrics = get_metrics(head_positions, left_front_positions, right_front_positions, middle_positions,
                           rear_positions, left_hind_positions, right_hind_positions)
 

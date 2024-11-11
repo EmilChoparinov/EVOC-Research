@@ -4,9 +4,15 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="1639dd26-dfc4-499a-952e-17a0823e4c2f" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/run.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/run.py" afterDir="false" />
+    <list default="true" id="1639dd26-dfc4-499a-952e-17a0823e4c2f" name="Changes" comment="MAP-Elites">
+      <change beforePath="$PROJECT_DIR$/src/MAP-Elites/Individuals/best_fitness.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/MAP-Elites/config.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/MAP-Elites/main.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/MAP-Elites/test.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/MAP-Elites/util.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/MAP-Elites/util_fitness_and_metrics.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/MAP-Elites/util_get_metrics.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/MAP-Elites/util_operations.py" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -46,8 +52,8 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "YS__W",
-    "last_opened_file_path": "/Users/haha/EVOC-Research",
+    "git-widget-placeholder": "main",
+    "last_opened_file_path": "/home/vlad/Desktop/Personal Projects/EVOC-Research/src",
     "settings.editor.selected.configurable": "preferences.pluginManager"
   }
 }]]></component>
@@ -74,5 +80,19 @@
       <updated>1729249514679</updated>
     </task>
     <servers />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="MAP-Elites" />
+    <option name="LAST_COMMIT_MESSAGE" value="MAP-Elites" />
+  </component>
+  <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/EVOC_Research$evaluator.coverage" NAME="evaluator Coverage Results" MODIFIED="1731283257076" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src/MAP-Elites" />
+    <SUITE FILE_PATH="coverage/EVOC_Research$config.coverage" NAME="config Coverage Results" MODIFIED="1731343856525" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src/MAP-Elites" />
+    <SUITE FILE_PATH="coverage/EVOC_Research$ea.coverage" NAME="ea Coverage Results" MODIFIED="1731285640898" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
+    <SUITE FILE_PATH="coverage/EVOC_Research$run.coverage" NAME="run Coverage Results" MODIFIED="1731285683590" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
+    <SUITE FILE_PATH="coverage/EVOC_Research$util_fitness_and_metrics.coverage" NAME="util_fitness_and_metrics Coverage Results" MODIFIED="1731292819095" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src/MAP-Elites2" />
+    <SUITE FILE_PATH="coverage/EVOC_Research$test.coverage" NAME="test Coverage Results" MODIFIED="1731353517150" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src/MAP-Elites" />
+    <SUITE FILE_PATH="coverage/EVOC_Research$main.coverage" NAME="main Coverage Results" MODIFIED="1731346341324" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src/MAP-Elites" />
+    <SUITE FILE_PATH="coverage/EVOC_Research$util_operations.coverage" NAME="util_operations Coverage Results" MODIFIED="1731303055518" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src/MAP-Elites" />
   </component>
 </project>

@@ -1,3 +1,4 @@
+import csv
 import math
 import numpy as np
 
@@ -7,6 +8,7 @@ from revolve2.modular_robot_simulation import ModularRobotScene, simulate_scenes
 from revolve2.simulators.mujoco_simulator import LocalSimulator
 from revolve2.standards.simulation_parameters import make_standard_batch_parameters
 import config
+from util_fitness_and_metrics import get_fitness_and_positions
 
 
 def generate_initial_population(population_size):
@@ -69,3 +71,25 @@ def visualize_individual(genotype):
         ),
         scenes=scenes
     )
+
+def get_csv_from_individual(genotype, file_path):
+    individual = [genotype]
+    robot, behavior = construct_robots_and_simulate_behaviors(individual)
+    (_, head_positions, left_front_positions, right_front_positions, middle_positions,
+     rear_positions, left_hind_positions, right_hind_positions) = get_fitness_and_positions(robot[0], behavior[0])
+    frame_id = [i for i in range(len(head_positions))]
+
+    with open(file_path, mode='w', newline='') as csv_file:
+        writer = csv.writer(csv_file)
+        # Write header
+        writer.writerow([
+            "frame_ID", "head", "left_front", "right_front",
+            "middle", "rear", "left_hind", "right_hind"
+        ])
+
+        for i in range(len(frame_id)):
+            writer.writerow([
+                frame_id[i], head_positions[i], left_front_positions[i], right_front_positions[i],
+                middle_positions[i], rear_positions[i], left_hind_positions[i], right_hind_positions[i]
+            ])
+    print(f"{file_path} saved !")

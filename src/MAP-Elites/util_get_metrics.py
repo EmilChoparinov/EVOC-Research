@@ -209,12 +209,12 @@ def get_metrics(head, left_front, right_front, middle, rear, left_hind, right_hi
     if results is not None:
         bias = results.get('bias', None)
         frequency = results.get('frequency', None)
-        cycles = results.get('cycles', None)
+        cycles = results.get('cycles', None) # Not Used
         if 'limb_movements' in results.keys():
             average_limb_movement = (results['limb_movements']['left_front'] + results['limb_movements']['right_front'] +
                               results['limb_movements']['left_hind'] + results['limb_movements']['right_hind']) / 4
 
-    return bias, frequency, cycles, average_limb_movement
+    return bias, frequency, average_limb_movement
 
 """
 1000 Random individuals:
@@ -223,5 +223,10 @@ bias:                  Min = 6.61122569, Max = 313.065579, Avg. = 162.297145, St
 frequency:             Min = 0.02587322, Max = 0.30303030, Avg. = 0.10415503, Std. dev. = 0.03886989
 cycles:                Min = 1.11513583, Max = 13.0606060, Avg. = 4.48908189, Std. dev. = 1.67529240
 average_limb_movement: Min = 0.0,        Max = 0.22503245, Avg. = 0.07154340, Std. dev. = 0.03713042
+
+Observations:
+average_limb_movement: Max = 0.2513393488246488
+
+
 
 """

@@ -112,7 +112,7 @@ simulation_ttl = 30
 csv_cols = [
         "generation_id", "generation_best_fitness_score", "frame_id", "head", 
         "middle", "rear", "right_front", "left_front", "right_hind", 
-        "left_hind","center-euclidian", "alpha", "fitness_function"
+        "left_hind","center-euclidian"
     ]
 
 # How many times per second do we sample the Pose of the robot

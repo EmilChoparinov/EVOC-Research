@@ -71,8 +71,8 @@ Emil and Yushuang have setup the I/O pins configured as:
 Left Arm: 0
 Left Leg: 1
 Torso: 8
-Reft Arm: 31
-Relf Leg: 30
+Right Arm: 31
+Right Leg: 30
 Tail: 24
 ```
 

@@ -66,5 +66,6 @@ def calculate(robot, behavior):
     rear_positions, left_hind_positions, right_hind_positions) = get_fitness_and_positions(robot, behavior)
     metrics = get_metrics(head_positions, left_front_positions, right_front_positions, middle_positions,
                           rear_positions, left_hind_positions, right_hind_positions)
-
+    # energy efficiency calculation ?
+    metrics[3] = metrics[3]/fitness
     return (fitness,) + metrics

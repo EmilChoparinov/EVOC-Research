@@ -81,59 +81,39 @@ def get_nearest_valid_value(df, idx, limb):
             return df[limb].iloc[idx + offset]
     return (0, 0)  # Return a default if no valid value found
 
+# Improved function for clarity, and now sums movement instead of averages
 def calculate_limb_movements(df, peaks, troughs):
-    """Calculates average movement for each limb between peaks and troughs."""
+    """Calculates total movement for each limb between consecutive turning points (peaks and troughs)."""
     limb_movements = {
-        'left_front': [],
-        'right_front': [],
-        'left_hind': [],
-        'right_hind': []
+        'left_front': 0,
+        'right_front': 0,
+        'left_hind': 0,
+        'right_hind': 0
     }
 
-    for i in range(min(len(peaks), len(troughs)) - 1):
-        peak_start = peaks[i]
-        trough_start = troughs[i]
-        peak_end = peaks[i + 1]
-        trough_end = troughs[i + 1]
+    # Combine and sort peaks and troughs
+    turning_points = sorted(peaks + troughs)
+
+    for i in range(len(turning_points) - 1):
+        start_idx = turning_points[i]
+        end_idx = turning_points[i + 1]
 
         for limb in limb_movements.keys():
-            start_pos = df[limb].iloc[peak_start]
-            end_pos = df[limb].iloc[trough_start]
+            start_pos = df[limb].iloc[start_idx]
+            end_pos = df[limb].iloc[end_idx]
 
+            # Handle missing values
             if start_pos == ('', ''):
-                start_pos = get_nearest_valid_value(df, peak_start, limb)
+                start_pos = get_nearest_valid_value(df, start_idx, limb)
             if end_pos == ('', ''):
-                end_pos = get_nearest_valid_value(df, trough_start, limb)
+                end_pos = get_nearest_valid_value(df, end_idx, limb)
 
-            movement_1 = np.linalg.norm(np.array(start_pos) - np.array(end_pos))
-
-            start_pos = df[limb].iloc[trough_start]
-            end_pos = df[limb].iloc[peak_end]
-
-            if start_pos == ('', ''):
-                start_pos = get_nearest_valid_value(df, trough_start, limb)
-            if end_pos == ('', ''):
-                end_pos = get_nearest_valid_value(df, peak_end, limb)
-
-            movement_2 = np.linalg.norm(np.array(start_pos) - np.array(end_pos))
-
-            start_pos = df[limb].iloc[peak_end]
-            end_pos = df[limb].iloc[trough_end]
-
-            if start_pos == ('', ''):
-                start_pos = get_nearest_valid_value(df, peak_end, limb)
-            if end_pos == ('', ''):
-                end_pos = get_nearest_valid_value(df, trough_end, limb)
-
-            movement_3 = np.linalg.norm(np.array(start_pos) - np.array(end_pos))
-
-            average_movement = np.mean([movement_1, movement_2, movement_3])
-            limb_movements[limb].append(average_movement)
-
-    for limb in limb_movements.keys():
-        limb_movements[limb] = np.mean(limb_movements[limb]) if limb_movements[limb] else 0
+            # Calculate the Euclidean distance between start and end positions
+            movement = np.linalg.norm(np.array(start_pos) - np.array(end_pos))
+            limb_movements[limb] += movement  # Add to total movement for each limb
 
     return limb_movements
+
 
 
 def analyze_file(head, left_front, right_front, middle, rear, left_hind, right_hind,
@@ -148,7 +128,8 @@ def analyze_file(head, left_front, right_front, middle, rear, left_hind, right_h
     mask = ~np.isnan(y_data)
     x_data, y_data = x_data[mask], y_data[mask]
 
-    bias = np.mean(y_data)
+    # changed average bias, to hip_std
+    hip_std = np.std(y_data)
 
     window_size = 40
     smoothed_y_data = np.convolve(y_data, np.ones(window_size) / window_size, mode='valid')
@@ -165,7 +146,7 @@ def analyze_file(head, left_front, right_front, middle, rear, left_hind, right_h
     limb_movements = calculate_limb_movements(df, peaks, troughs)
 
     results = {
-        'bias': bias,
+        'hip': hip_std,
         'frequency': frequency,
         'cycles': cycles,
         'limb_movements': limb_movements
@@ -205,16 +186,16 @@ def analyze_file(head, left_front, right_front, middle, rear, left_hind, right_h
 def get_metrics(head, left_front, right_front, middle, rear, left_hind, right_hind):
     results = analyze_file(head, left_front, right_front, middle, rear, left_hind, right_hind)
 
-    bias = None; frequency = None; cycles = None; average_limb_movement = None
+    bias = None; frequency = None; cycles = None; total_limb_movement = None
     if results is not None:
         bias = results.get('bias', None)
         frequency = results.get('frequency', None)
         cycles = results.get('cycles', None) # Not Used
         if 'limb_movements' in results.keys():
-            average_limb_movement = (results['limb_movements']['left_front'] + results['limb_movements']['right_front'] +
+            total_limb_movement = (results['limb_movements']['left_front'] + results['limb_movements']['right_front'] +
                               results['limb_movements']['left_hind'] + results['limb_movements']['right_hind']) / 4
 
-    return bias, frequency, average_limb_movement
+    return bias, frequency, total_limb_movement
 
 """
 1000 Random individuals:

@@ -5,7 +5,7 @@ import config
 
 
 def select_survivors(individuals, fitness_and_metrics):
-    # Bias, Frequency, Average Limb Movement
+    # hip_std, Frequency, movement_efficiency
     average = [162.29714514585564, 0.10415503229916442, 0.0715434096704684]
     std_dev = [46.79208827751169, 0.03886989349782155, 0.037130429051313626]
     nr_of_buckets = [10, 10, 10]

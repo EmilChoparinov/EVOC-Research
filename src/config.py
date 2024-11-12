@@ -100,6 +100,7 @@ cpg_network_struct, output_mapping = active_hinges_to_cpg_network_structure_neig
 concurrent_simulators = 8
 ea_runs_cnt = 5
 ea_generations_cnt = 500
+alpha = 0.5
 
 # Simulation Parameters ========================================================
 simulator = LocalSimulator(headless=True, num_simulators=concurrent_simulators)

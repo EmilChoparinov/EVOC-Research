@@ -36,7 +36,7 @@ def dtw_similarity(robot_data: pd.DataFrame, animal_data: pd.DataFrame) -> float
     # Ensure data shapes match before calculating DTW
     if robot_data.shape == animal_data.shape:
         distance, path = fastdtw(robot_data, animal_data, dist=euclidean)
-        return -distance
+        return distance
     else:
         raise ValueError("Shape mismatch between robot and animal data, cannot calculate DTW.")
 
@@ -56,7 +56,7 @@ def calculate_similarity(scale_data: pd.DataFrame) -> pd.DataFrame:
     coordinate_columns = ['middle', 'rear', 'left_hind', 'left_front', 'head', 'right_hind', 'right_front']
 
     # read animal dataset
-    animal_data = pd.read_csv('./src/model//animal_data_head_orgin_884.csv').reset_index(drop=True)
+    animal_data = pd.read_csv('./src/model/animal_data_head_orgin_884.csv').reset_index(drop=True)
     animal_data = parse_and_split_coordinates(animal_data, coordinate_columns)
 
     similarities = []
@@ -100,7 +100,7 @@ def combination_fitnesses(distance,df_robot,a=0.7):
     distance=distance_fitness_scaling(distance)
     # For MSE DTW VAE +
     # For cosine -
-    combination=a*np.array(distance)-(1-a)*np.array(animal_similarity)
+    combination=a*np.array(distance)+(1-a)*np.array(animal_similarity)
     print(combination)
     return combination,distance,animal_similarity
 
@@ -121,10 +121,10 @@ def distance_fitness_scaling(fitnesses):
 
 
 def DTW_fitness_scaling(fitnesses):
-    # best 1 worst 0
+    # best 0 worst 1
     scaled_fitness=[]
-    min_f =-5150817
-    max_f =-3400000
+    min_f =3400000
+    max_f =5150817
     if min_f > np.min(fitnesses):
         min_f = np.min(fitnesses)
     if max_f < np.max(fitnesses):

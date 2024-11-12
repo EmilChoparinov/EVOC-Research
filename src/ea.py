@@ -5,7 +5,7 @@ from revolve2.modular_robot.brain.cpg import BrainCpgNetworkStatic
 
 from revolve2.modular_robot_simulation import ModularRobotScene, simulate_scenes
 from revolve2.standards.simulation_parameters import make_standard_batch_parameters
-
+from config import alpha
 import logging
 import math
 import numpy as np
@@ -48,9 +48,11 @@ from rotation_scaling import get_data_with_forward_center,translation_rotation
 
 
 # TODO: This function has been primed to be embarrassingly parallel if more performance required.
+
 # def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt):
-def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt, fitness_function: str = "distance",
-                             alpha: float = 1.0):
+def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt, fitness_function: str = "distance", alpha: float = None):
+
+    alpha = alpha if alpha is not None else config.alpha
 
     if(max_runs == 0): return
 
@@ -80,25 +82,11 @@ def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt, fitne
 
         robots, behaviors = ea_simulate_step(solutions)
         #Rotation
-        translation_rotation(get_data_with_forward_center(robots, behaviors))
+        # translation_rotation(get_data_with_forward_center(robots, behaviors))
         # TODO scaling
         
         #fitnesses = -evaluate.evaluate(robots, behaviors)
-        fitnesses = None
-
-        if fitness_function == "distance":
-            fitnesses = -evaluate.evaluate_distance(robots, behaviors)
-        elif fitness_function == "similarity":
-            fitnesses = -evaluate.evaluate_similarity(robots, behaviors)
-        elif fitness_function == "blended":
-            # Calculate the weighted average of the two adaptations, weights determined by alpha
-            distance_fitness = evaluate.evaluate_distance(robots, behaviors)
-            similarity_fitness = evaluate.evaluate_similarity(robots, behaviors)
-            fitnesses = -((alpha * distance_fitness) + ((1 - alpha) * similarity_fitness))
-
-        if fitnesses is None:
-            raise ValueError(
-                "Fitnesses could not be calculated. Please check the fitness_function value and corresponding evaluation functions.")
+        fitnesses = -evaluate.evaluate(robots, behaviors)
 
         cma_es.tell(solutions, fitnesses)
 

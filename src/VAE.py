@@ -193,6 +193,7 @@ def plot_fitness(fitnesses_all,distance_all, animal_similarity_all):
     iterations = np.arange(1, len(distance_all) + 1)
 
     fig, axs = plt.subplots(3, 1, figsize=(10, 15))
+    fig.subplots_adjust(hspace=1)
 
     axs[0].plot(iterations, max_distances, label="Distance", color='blue', marker='o')
     axs[0].set_title("Distance over Generations")
@@ -212,7 +213,7 @@ def plot_fitness(fitnesses_all,distance_all, animal_similarity_all):
     axs[2].set_ylabel("Max Fitness Value")
     axs[2].legend()
 
-    plt.tight_layout()
+    # plt.tight_layout()
     plt.show()
 
 

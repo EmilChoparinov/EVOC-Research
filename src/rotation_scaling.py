@@ -90,8 +90,11 @@ def translation_rotation(df: pd.DataFrame) -> pd.DataFrame:
             'rear': np.array([row.get('rear_x', np.nan), row.get('rear_y', np.nan)]),
             'right_front': np.array([row.get('right_front_x', np.nan), row.get('right_front_y', np.nan)]),
             'left_front': np.array([row.get('left_front_x', np.nan), row.get('left_front_y', np.nan)]),
-            'right_hind': np.array([row.get('right_hind_x', np.nan), row.get('right_hind_y', np.nan)]),
-            'left_hind': np.array([row.get('left_hind_x', np.nan), row.get('left_hind_y', np.nan)]),
+            # 'right_hind': np.array([row.get('right_hind_x', np.nan), row.get('right_hind_y', np.nan)]),
+            # 'left_hind': np.array([row.get('left_hind_x', np.nan), row.get('left_hind_y', np.nan)]),
+            # flip if not corrected
+            'right_hind': np.array([row.get('right_hind_x', np.nan), row.get('left_hind_y', np.nan)]),
+            'left_hind': np.array([row.get('left_hind_x', np.nan), row.get('right_hind_y', np.nan)]),
         }
 
         # Translate and rotate each point

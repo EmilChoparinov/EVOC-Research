@@ -7,12 +7,7 @@
     <list default="true" id="1639dd26-dfc4-499a-952e-17a0823e4c2f" name="Changes" comment="MAP-Elites">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/VAE.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/VAE.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/animal_similarity.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/animal_similarity.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/config.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/ea.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/ea.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/evaluate.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/evaluate.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/run.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/run.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/typedef.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/typedef.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/rotation_scaling.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/rotation_scaling.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -85,7 +80,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1729249514679</updated>
-      <workItem from="1731416974894" duration="4622000" />
+      <workItem from="1731416974894" duration="5475000" />
     </task>
     <servers />
   </component>

@@ -88,32 +88,33 @@ joy = select_joy_routine()
 
 params = {
     "left_rot": np.array(
-[ 0.78867704,  1.24796958, -2.19697669,  1.32979234, -0.20898387,
-       -1.62557144, -0.25385099,  2.04257014,  1.23829051]
+[ 2.82433577, -0.88279169, -2.47116605,  1.82428678, -0.86512654,
+       -0.55502541,  2.62646718,  2.60207038,  0.91658725]
+# [ 0.78867704,  1.24796958, -2.19697669,  1.32979234, -0.20898387,
+#        -1.62557144, -0.25385099,  2.04257014,  1.23829051]
 # [ 0.75052009, -0.39783284,  1.09146232,  0.5567706 ,  1.0520274 ,
 #        -0.49341066,  0.62598813,  0.81604875,  0.38351799]
             ), 
     "right_rot": np.array(
-[-1.57751497, -0.19953098,  3.12789491, -1.7845621 ,  0.57062205,
-       -0.66577105,  2.29168985, -2.07357057,  1.29808196]
+[-2.16026706,  0.09116993,  1.64391874,  1.1739418 , -1.56621003,
+       -1.25904818,  2.52142584, -0.77648282,  1.77781778]
 # [-2.13869271,  0.00726176, -1.77607038,  1.72366607, -2.44596507,
 #        -2.30199428, -1.103323  ,  0.60124181,  0.44488595]
 # [-0.64907861, -0.20690301, -0.96089514,  0.92607873, -1.27081019,
 #         0.70718109,  1.16130489, -1.22530135,  1.54471567]
             ),
     "left": np.array(
-                [-2.41618065, -0.09473266, -2.02591035, 
-                -0.22562266, -1.96329705, 2.48678446,  
-                0.32659213, -1.05492081,  2.49996295]
-            ),
+[-2.28611778,  2.29798247,  0.85878737,  0.44235348,  1.81490116,
+        2.44823764, -2.04817328, -2.49931801,  2.02701862]
+),
     "back": np.array(
-                [-2.41618065, -0.09473266, -2.02591035, 
-                -0.22562266, -1.96329705, 2.48678446,  
-                0.32659213, -1.05492081,  2.49996295]
+        [-2.28611778,  2.29798247,  0.85878737,  0.44235348,  1.81490116,
+                2.44823764, -2.04817328, -2.49931801,  2.02701862]
             ),
     "forward": np.array(
-   [-2.99999447,  1.81308186, -0.0331997 ,  0.06852362,  2.89306811,
-       -0.58302268,  2.76108739, -2.99385889, -1.80114772]
+[-2.49573981e+00,  2.24011864e+00,  2.49964536e+00, -2.49914345e+00,
+        1.90730568e+00,  2.49804046e+00,  2.19257171e+00,  3.30163622e-05,
+        1.29650217e-02]
             ),
     "right": np.array(
                 [-2.41618065, -0.09473266, -2.02591035, 
@@ -158,6 +159,30 @@ class BrainControllerInstance(BrainInstance):
     # transfer to at polling rate
     transition_buffer: deque[list[tuple[int, ActiveHinge]]] = field(default_factory=deque) 
 
+    def _get_dir_brain(self, joy_state: JoyState) -> BrainCpgNetworkStatic:
+        deadzone = 0.1
+
+        # Do -joy_state because for some reason on my controller the down input
+        # is mapped to +1, not -1. Problem only visible with y
+        x = 0 if abs(joy_state.left_stick_x) < deadzone else joy_state.left_stick_x
+        y = 0 if abs(joy_state.left_stick_y) < deadzone else -joy_state.left_stick_y
+
+
+
+        print(f"{x=},{y=}")
+        if y > 0:
+            return brain_map["forward"]
+        elif y < 0:
+            return brain_map["back"]
+        elif x < 0:
+            print("go left: not impl")
+        elif x > 0:
+            print("go right: not impl")
+        else:
+            print("neutral")
+
+
+
     def control(
         self, 
         dt: float, 
@@ -171,8 +196,8 @@ class BrainControllerInstance(BrainInstance):
         select_brain = self.cpg_state
 
         if(joy_state.right_stick_x < 0.1 and joy_state.right_stick_x > -0.1):
-            select_brain = brain_map["forward"]
-            print("go forward")
+            select_brain = self._get_dir_brain(joy_state)
+            if(select_brain is None): return # No brain selected
         elif(joy_state.right_stick_x > 0):
             select_brain = brain_map["right_rot"]
             print("go right")
@@ -244,7 +269,7 @@ config = Config(
     modular_robot=robot,
     hinge_mapping={UUIDKey(v["box"]): v["pin"] for k,v in pmap.items()},
     run_duration=99999,
-    control_frequency=30,
+    control_frequency=100,
     initial_hinge_positions={UUIDKey(v["box"]): 0 for k,v in pmap.items()},
     inverse_servos={v["pin"]: v["is_inverse"] for k,v in pmap.items()},
 )

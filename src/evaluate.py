@@ -99,29 +99,52 @@ def get_pose_projected_accuracy_on_target(robot: ModularRobot, behavior: simulat
     proj_mag = np.linalg.norm(proj)
     return proj_mag / target_dist
 
-    # Find the relative magnititude (the distance) away from the origin
-    relative_mag_end = np.linalg.norm(
-        np.array([relative_end_x,relative_end_y])
+def get_pose_nd_projected_mag(
+    robot: ModularRobot, 
+    behavior: simulated_behavior, 
+    target: npt.NDArray[np.float_]
+    ) -> float:
+    origin_x, origin_y, _ = get_robot_euclidian_head(robot, behavior[0])
+    end_x, end_y, _ = get_robot_euclidian_head(robot, behavior[-1])
+
+    actual = rel_op(
+        np.array([origin_x, origin_y]),
+        np.array([end_x, end_y])
     )
-    
-    # Use the magnitiude to construct the expected location IF the robot exactly
-    # followed the correct angle
-    expected_relative_x, expected_relative_y = polar_to_cartesian_2d(
-        relative_mag_end, target_angle
-    )
-    
-    # Project the actual position over the expected position
-    proj_x, proj_y = project_nd(
-        np.array([relative_end_x, relative_end_y]), 
-        np.array([expected_relative_x, expected_relative_y])
-    )
-    
-    # Get the magnititude of the projection 
-    proj_mag = np.linalg.norm(np.array([proj_x, proj_y]))
-    
-    # returns [0,1] value representing the percent difference between the actual
-    # and expected
-    return proj_mag / relative_mag_end
+
+    dot_product = np.dot(actual, target)
+        
+    return dot_product / (np.linalg.norm(target) ** 2)
+
+def get_pose_nd_projected_normal_mag(
+        robot: ModularRobot, 
+        behavior: simulated_behavior, 
+        target: npt.NDArray[np.float_]
+    ) -> float:
+        origin_x, origin_y, _ = get_robot_euclidian_head(robot, behavior[0])
+        end_x, end_y, _ = get_robot_euclidian_head(robot, behavior[-1])
+
+        actual = rel_op(
+            np.array([origin_x, origin_y]),
+            np.array([end_x, end_y])
+        )
+
+        target_norm = target / np.linalg.norm(target) 
+        actual_norm = actual/ np.linalg.norm(actual)
+
+        cos_theta = np.dot(actual_norm, target_norm)
+
+        # Since both vectors are normalized before projection, the dot product
+        # of the projection returns cos(theta). We must transform the following
+        # cases of cos(theta) into a form that represents positive contribution
+        # towards the angle of the target.
+        # < 0 :-> point in opposite direction
+        # > 0 :-> point in the same direction
+        # = 0 :-> angles are perpendicular
+        # The proposed solution is to do max(cos(theta), 0), since negative 
+        # values mean the angle is obtuse in vector space.
+        return max(cos_theta, 0)
+
 
 def get_pose_z_avg(robot: ModularRobot, behavior: simulated_behavior) -> float:
     """
@@ -162,8 +185,8 @@ def get_pose_muscle_effiency(robot: ModularRobot, behavior: simulated_behavior) 
     def eval_effiency(s0: ModularRobotSimulationState, sN: ModularRobotSimulationState):
         hinges = robot.body.find_modules_of_type(ActiveHingeV2)
         
-        s0_hinges = [s0.get_hinge_position(h)*50 for h in hinges]
-        sN_hinges = [sN.get_hinge_position(h)*50 for h in hinges]
+        s0_hinges = [s0.get_hinge_position(h)*25 for h in hinges]
+        sN_hinges = [sN.get_hinge_position(h)*25 for h in hinges]
         
         # Calculates the overall effiency of the robot in this specific state
         x = sum([
@@ -264,59 +287,40 @@ def evaluate_angle_with_projection_with_z_avg(
     def evalf(robot: ModularRobot, states: simulated_behavior):
         # return get_pose_cumulative_maximal_rotation(robot, states)
         # print(f"{get_pose_maximal_rotation_filter_dir(robot, states, go_left=False)=} - {get_pose_muscle_effiency(robot, states)=}")
-        return get_pose_maximal_rotation_filter_dir(robot, states, go_left=False) - get_pose_muscle_effiency(robot, states)
-
-
-        _,_,origin_z = get_robot_euclidian_head(robot, states[0])
-        airtime = get_pose_z_airtime(robot, states)
-        similarity = get_pose_projected_accuracy_on_target(
-            robot, states, target)
-        angle_diff = get_pose_theta_xy_delta(robot, states, target)
-        
-        # `angle_diff` is in radians. This value conveniently at 0.1 radians
-        # (about 5 degrees) will produce the value 1. We clamp this to max
-        # at one. Everything else gradually gives less score steeply
-        # angle_metric = min(0.1 / angle_diff, 1)
-        
-        # return airtime + similarity + angle_metric
-        # return airtime + angle_metric
-        # return angle_metric
-
-        # We gradually shift objectives between angling and walking forward again
-        # over 20 generations, starting at generation 20. This artificially 
-        # simulates the environment changing in perspective to the robot
-        # ease = np.linspace(0, 1, 20)
-        
-        # alpha = ease[min(19, gen_idx-19)]
-        # if gen_idx == 23: import pdb; pdb.set_trace()
-        # if gen_idx < 20: alpha = 0
-        # print(f"{similarity=}\n{angle_metric=}\n")
-        # return (1 - alpha) * angle_metric + alpha * similarity
-        # import pdb;pdb.set_trace()
-        
-        # ease = np.linspace(0, 1, 10)
-        # alpha = ease[min(9,gen_idx)]
-        # return (1 - alpha) * angle_metric + (alpha) * similarity
-        
-        
-        # if angle_metric == 1:
-        #     print(f"score:{angle_metric + similarity}")
-        #     # extend with similarity once angle is met
-        #     return angle_metric + similarity 
-        # print(f"score:{angle_metric}")
-        # return angle_metric
-
-
-        if run_idx < 20: return angle_metric
-        else: return similarity
-
-        return 0.1* angle_metric + 0.9*similarity
-
+        return get_pose_maximal_rotation_filter_dir(robot, states, go_left=True) - get_pose_muscle_effiency(robot, states)
     return np.array([
         evalf(robot, states) for robot, states in zip(robots, behaviors)
     ])
 
 
+def evaluate_via_target_approx(robots: list[ModularRobot], behaviors: list[simulated_behavior], theta: float) -> npt.NDArray[np.float_]:
+    """
+    Perform an evaluation along a Polar 2D plane. Give an angle theta in radians
+    and the robot will be measured against its projected distance among 
+    that angle. 
+
+    The procedure is to normalize the vector but retain its angle against the
+    origin. Given angle theta, construct coordinate (1, theta). We measure the
+    projected distance which will between values [0,1] where 0 is 0 is no 
+    progress along the angle and 1 is complete progress.  
+    """
+
+    # In theory, we should make it such that the center is the robots head but 
+    # since this system is trained with always the robot vaguely around the 
+    # origin 0 this shouldnt be a big deal
+    cart_target_vec = polar_to_cartesian_2d(5, theta)
+
+    def evalf(robot: ModularRobot, states: simulated_behavior):
+        optimize = get_pose_nd_projected_mag(robot, states, cart_target_vec)
+
+        penalize = get_pose_muscle_effiency(robot, states)/100
+        print(f"{optimize=}\n{penalize=}")
+        return optimize * penalize
+        # return optimize - penalize / 2
+
+    return np.array([
+        evalf(robot, states) for robot,states in zip(robots, behaviors)
+    ]) 
 
 def evaluate_pose_x_delta(robots: list[ModularRobot], behaviors: list[simulated_behavior]) -> npt.NDArray[np.float_]:
     """
@@ -326,12 +330,18 @@ def evaluate_pose_x_delta(robots: list[ModularRobot], behaviors: list[simulated_
     
     Returns an array of ordered fitness values.
     """
-    return np.array([
-        # Get delta from first state to last state in simulation
-        get_pose_x_delta(
+
+    def evalf(robot: ModularRobot, states: simulated_behavior):
+        optimize = get_pose_x_delta(
             states[0].get_modular_robot_simulation_state(robot),
             states[-1].get_modular_robot_simulation_state(robot)
-        ) for robot, states in zip(robots, behaviors)
+        ) * 200
+        penalize = get_pose_muscle_effiency(robot, states)
+        print(f"{optimize=}\n{penalize=}")
+        return optimize - penalize
+
+    return np.array([
+        evalf(robot, states) for robot, states in zip(robots, behaviors)
     ])
 
 def find_most_fit(fitnesses: npt.NDArray[np.float_], robots: list[ModularRobot], behaviors: list[simulated_behavior]):

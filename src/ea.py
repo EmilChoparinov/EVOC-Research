@@ -14,6 +14,7 @@ from typedef import simulated_behavior, genotype
 import data_collection
 import evaluate
 import config
+import numpy as np
 
 # TODO: This function has been primed to be embarrassingly parallel if more performance required.
 def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt):
@@ -39,13 +40,17 @@ def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt):
         # Evaluation Step
         solutions = cma_es.ask()
         robots, behaviors = ea_simulate_step(solutions)
-        # fitnesses = -evaluate.evaluate(robots, behaviors)
-        fitnesses = -evaluate.evaluate_angle_with_projection_with_z_avg(
-            robots,
-            behaviors,
-            max_runs,
-            generation_i
+        fitnesses = -evaluate.evaluate_via_target_approx(
+            robots, behaviors, np.deg2rad(90)
         )
+        # fitnesses = -evaluate.evaluate_pose_x_delta(robots, behaviors)
+        # fitnesses = -evaluate.evaluate(robots, behaviors)
+        # fitnesses = -evaluate.evaluate_angle_with_projection_with_z_avg(
+        #     robots,
+        #     behaviors,
+        #     max_runs,
+        #     generation_i
+        # )
         cma_es.tell(solutions, fitnesses)
         
         # Data Collection Step

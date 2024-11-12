@@ -17,8 +17,7 @@ def get_pose_x_delta(state0: ModularRobotSimulationState, stateN: ModularRobotSi
     """
     return state0.get_pose().position.x - stateN.get_pose().position.x
 
-def evaluate_distance(robots: list[ModularRobot], behaviors: list[simulated_behavior]) -> npt.NDArray[np.float_]:
-#def evaluate(robots: list[ModularRobot], behaviors: list[simulated_behavior]) -> npt.NDArray[np.float_]:
+def distance(robots: list[ModularRobot], behaviors: list[simulated_behavior]) -> npt.NDArray[np.float_]:
     """
     Perform evaluation over a list of robots. The incoming data is **assumed**
     to be ordered. I.E. the first index in the modular robot list has its
@@ -35,7 +34,7 @@ def evaluate_distance(robots: list[ModularRobot], behaviors: list[simulated_beha
     ])
 
 
-def evaluate_similarity(robots: list[ModularRobot], behaviors: list[simulated_behavior]) -> npt.NDArray[np.float_]:
+def similarity(robots: list[ModularRobot], behaviors: list[simulated_behavior]) -> npt.NDArray[np.float_]:
     """
     Calculate the fitness based on the similarity to a dynamic ideal behavior.
     The ideal behavior is dynamically determined as an offset from the initial position.
@@ -57,6 +56,18 @@ def evaluate_similarity(robots: list[ModularRobot], behaviors: list[simulated_be
         similarity_scores.append(similarity_score)
 
     return np.array(similarity_scores)
+
+def blend(
+    robots: list[ModularRobot], 
+    behaviors: list[simulated_behavior], 
+    alpha: float
+) -> npt.NDArray[np.float_]:
+    """
+    Blends the functions `distance` and `similarity` according to value `alpha`
+    """
+    return (alpha * distance(robots, behaviors)) + ((1-alpha) * similarity(robots, behaviors))
+
+
 
 def find_most_fit(fitnesses: npt.NDArray[np.float_], robots: list[ModularRobot], behaviors: list[simulated_behavior]):
     """

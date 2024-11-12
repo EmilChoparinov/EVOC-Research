@@ -52,7 +52,10 @@ from revolve2.modular_robot.brain.cpg import active_hinges_to_cpg_network_struct
 from revolve2.modular_robot_physical import Config, UUIDKey
 
 from revolve2.simulators.mujoco_simulator import LocalSimulator
-from typing import Callable, Literal, TypedDict
+
+from typing import Callable, Literal, TypedDict, get_args
+from types import SimpleNamespace
+from typedef import limbs, box_points, joint_points, fitness_functions
 
 import cma
 import pandas as pd
@@ -100,6 +103,8 @@ cpg_network_struct, output_mapping = active_hinges_to_cpg_network_structure_neig
 concurrent_simulators = 8
 ea_runs_cnt = 5
 ea_generations_cnt = 500
+alpha = 1
+use_fit: fitness_functions = 'distance'
 
 # Simulation Parameters ========================================================
 simulator = LocalSimulator(headless=True, num_simulators=concurrent_simulators)
@@ -146,7 +151,9 @@ class PhysMap(TypedDict):
         }
         return phy_map[box]
     
-    def map_with(body: BodyV2) -> dict[phys_box_names, 'PhysMap']:
+    def get_hinge(body: BodyV2, box: phys_box_names): pass
+
+    def map_with(body: BodyV2) -> 'PhysMap':
         return {
             "left_arm": {
                 "pin": 0,

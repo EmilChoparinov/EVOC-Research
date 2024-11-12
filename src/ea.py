@@ -48,9 +48,7 @@ from rotation_scaling import get_data_with_forward_center,translation_rotation
 
 
 # TODO: This function has been primed to be embarrassingly parallel if more performance required.
-# def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt):
-def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt, fitness_function: str = "distance",
-                             alpha: float = 1.0):
+def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt):
 
     if(max_runs == 0): return
 
@@ -60,15 +58,11 @@ def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt, fitne
     # Stack `max_run` times this function and save output
     process_ea_iteration(max_gen, max_runs - 1)
     
-    setup_logging(file_name=config.generate_log_file(max_runs))
-    logging.info("Start CMA-ES Optimization")
-    
     cma_es = config.generate_cma()
     
     # Write the columns into the csv 
     behavior_csv = config.generate_fittest_xy_csv(max_runs)
     config.write_buffer.to_csv(behavior_csv, index=False)
-
 
     # EA Loop
     for generation_i in range(max_gen):
@@ -79,26 +73,16 @@ def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt, fitne
         solutions = cma_es.ask()
 
         robots, behaviors = ea_simulate_step(solutions)
+
         #Rotation
         translation_rotation(get_data_with_forward_center(robots, behaviors))
         # TODO scaling
         
-        #fitnesses = -evaluate.evaluate(robots, behaviors)
-        fitnesses = None
-
-        if fitness_function == "distance":
-            fitnesses = -evaluate.evaluate_distance(robots, behaviors)
-        elif fitness_function == "similarity":
-            fitnesses = -evaluate.evaluate_similarity(robots, behaviors)
-        elif fitness_function == "blended":
-            # Calculate the weighted average of the two adaptations, weights determined by alpha
-            distance_fitness = evaluate.evaluate_distance(robots, behaviors)
-            similarity_fitness = evaluate.evaluate_similarity(robots, behaviors)
-            fitnesses = -((alpha * distance_fitness) + ((1 - alpha) * similarity_fitness))
-
-        if fitnesses is None:
-            raise ValueError(
-                "Fitnesses could not be calculated. Please check the fitness_function value and corresponding evaluation functions.")
+        # Select fitness function based on configuration
+        match config.use_fit:
+            case "distance": fitnesses = -evaluate.distance(robots, behaviors)
+            case "similariy": fitnesses = -evaluate.similarity(robots, behaviors)
+            case "blended": fitnesses = -evaluate.blend(robots, behaviors, config.alpha)
 
         cma_es.tell(solutions, fitnesses)
 
@@ -107,12 +91,12 @@ def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt, fitne
 
         # Data Collection Step
         data_collection.record_behavior(
-            best_robot, best_fitness, best_behavior, generation_id=generation_i, alpha=alpha,
-            fitness_function=fitness_function)
+            best_robot, best_fitness, best_behavior, generation_id=generation_i, alpha=config.alpha,
+            fitness_function=config.use_fit)
 
         data_collection.record_elite_generations(
             run_id=max_runs, generation=generation_i, fitness=best_fitness, matrix=best_robot.brain._weight_matrix,
-            alpha=alpha, fitness_function=fitness_function)
+            alpha=config.alpha, fitness_function=config.use_fit)
 
         # top 3 fitness and corresponding robots and weight matrices
         top_3_indices = sorted(range(len(fitnesses)), key=lambda i: fitnesses[i], reverse=True)[:3]

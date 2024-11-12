@@ -6,7 +6,8 @@ out/
 
 *.csv
 *.zip
-*log*.txt
+*log
+*.txt
 
 .swp
 

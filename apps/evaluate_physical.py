@@ -226,7 +226,7 @@ def record_process():
 
         while True:
             if on_run_finished.is_set():
-                print("Recording for this run finished, starting again")
+                print("=== Recording for this run finished, starting again ===")
                 on_run_finished.clear()
                 break
             

@@ -22,7 +22,9 @@ from revolve2.standards.modular_robots_v2 import gecko_v2, snake_v2
 from revolve2.modular_robot.body.base import ActiveHinge
 
 import pandas as pd
+import threading
 import numpy as np
+import cv2
 
 from dataclasses import dataclass
 from typing import Literal
@@ -40,13 +42,18 @@ from revolve2.modular_robot_physical import Config, UUIDKey
 from revolve2.modular_robot_physical.remote import run_remote
 
 from src.network_layer import remote_control_with_polling_rate
-from src.config import PhysMap
+from src.config import PhysMap, cameras
 
 import numpy as np
 
 import threading
 from pprint import pprint
 import math
+
+# CondLocks used to communicate between the remote control robot thread and the
+# filming thread
+on_run_finished = threading.Event()
+on_run_start = threading.Condition()
 
 # These CPG params are ordered from the 30-runs-300-gen-distance-only.zip file
 batch_cpg_params = [
@@ -114,7 +121,7 @@ batch_cpg_params = [
     [-1.6459108 ,  0.57498081,  0.00844196, -1.99963482,  0.81886104,
        -1.7708486 ,  0.89132614, -1.50606673, -0.86288779]
 ]
-import pdb;pdb.set_trace()
+
 
 body = gecko_v2()
 
@@ -171,8 +178,10 @@ class BatchTesterBrainInstance(BrainInstance):
             self.dt0 += dt
         else:
             self.capture_dt = True
+            with on_run_finished: on_run_finished.set()
             input(f"Loaded CPG Index: {self.idx}. Press enter to start test next test")
-        
+            with on_run_start: on_run_start.notifyAll()
+
         # After 30 seconds, we progress to the next CPG
         if(self.dt0 > 5):
             self.idx += 1
@@ -194,9 +203,56 @@ robot = ModularRobot(body=body,
                      brain=BatchTesterBrain()
 )
 
+# CAMERA IMPL
+cameras_in_use = [
+    cv2.VideoCapture(cameras[1]),
+    cv2.VideoCapture(cameras[2])
+]
+
+def record_process():
+    print("=== RECORDER IS ACTIVE ===")
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH) + 0.5)
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT) + 0.5)
+    size = (920, 920)
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+
+
+    write_to_file = cv2.VideoWriter(f"{time.strftime('%Y%m%d-%H%M%S')}.mp4", fourcc, 20.0, size)
+
+    while True:
+        with on_run_start:
+            on_run_start.wait()
+            write_to_file = cv2.VideoWriter(f"{time.strftime('%Y%m%d-%H%M%S')}.mp4", fourcc, 20.0, size)
+
+        while True:
+            if on_run_finished.is_set():
+                print("Recording for this run finished, starting again")
+                on_run_finished.clear()
+                break
+            
+            # Read frames from both cameras
+            ret1, frame1 = cameras_in_use[0].read()
+            ret2, frame2 = cameras_in_use[1].read()
+            
+            if not ret1 or not ret2:
+                print("Failed to grab frames.")
+                break        
+            
+            frame1_resized = cv2.resize(frame1, size)
+            frame2_resized = cv2.resize(frame2, size)
+
+            # Concatenate frames side by side
+            frame = cv2.hconcat([frame1_resized, frame2_resized])
+            cv2.imshow("Stitched Feed", frame)
+            write_to_file.write(frame)
+
+    [c.release() for c in cameras_in_use]
+    cv2.destroyAllWindows()
+
 def on_prepared() -> None:
     print("Robot is ready. Press enter to start")
     input()
+
 pmap = PhysMap.map_with(body)
 body_map: dict[int, ActiveHingeV2] = {
         31: body.core_v2.right_face.bottom, # right arm
@@ -215,10 +271,14 @@ config = Config(
     inverse_servos={v["pin"]: v["is_inverse"] for k,v in pmap.items()},
 )
 
+t = threading.Thread(target=record_process)
+
 print("Initializing robot..")
+t.start()
 remote_control_with_polling_rate(
     config=config,
     port=20812,
     hostname="10.15.3.59",
     rate=10
 )
+t.join()

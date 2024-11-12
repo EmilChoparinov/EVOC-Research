@@ -100,15 +100,18 @@ def combination_fitnesses(distance,df_robot,a=0.7):
     distance=distance_fitness_scaling(distance)
     # For MSE DTW VAE +
     # For cosine -
-    combination=a*np.array(distance)+(1-a)*np.array(animal_similarity)
-    print(combination)
+    # distance[-1,0] best:-1  animal_similarity:[0,1] best:0
+    # fitness[-1:1] best:-1
+    distance=(-1)*a*np.array(distance)
+    combination=distance+(1-a)*np.array(animal_similarity)
+    print("combined_fitnesses",combination)
     return combination,distance,animal_similarity
 
 def distance_fitness_scaling(fitnesses):
-    # best 0 worst 1
+    # best 1 worst 0
     scaled_fitness=[]
-    min_f=-3
-    max_f=0.2
+    min_f=-0.2
+    max_f=3
     if min_f>np.min(fitnesses):
         min_f = np.min(fitnesses)
     if max_f<np.max(fitnesses):

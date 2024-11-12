@@ -5,14 +5,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="1639dd26-dfc4-499a-952e-17a0823e4c2f" name="Changes" comment="MAP-Elites">
-      <change beforePath="$PROJECT_DIR$/src/MAP-Elites/Individuals/best_fitness.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/MAP-Elites/config.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/MAP-Elites/main.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/MAP-Elites/test.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/MAP-Elites/util.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/MAP-Elites/util_fitness_and_metrics.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/MAP-Elites/util_get_metrics.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/MAP-Elites/util_operations.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/VAE.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/VAE.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/animal_similarity.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/animal_similarity.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/config.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/ea.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/ea.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/evaluate.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/evaluate.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/run.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/run.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/typedef.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/typedef.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -52,9 +52,15 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "main",
+    "git-widget-placeholder": "YS__W",
     "last_opened_file_path": "/home/vlad/Desktop/Personal Projects/EVOC-Research/src",
-    "settings.editor.selected.configurable": "preferences.pluginManager"
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "preferences.pluginManager",
+    "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
   <component name="RecentsManager">
@@ -66,7 +72,8 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-python-sdk-0e3be3396995-c546a90a8094-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-242.23339.19" />
+        <option value="bundled-js-predefined-d6986cc7102b-7c0b70fcd90d-JavaScript-PY-242.21829.153" />
+        <option value="bundled-python-sdk-464836ebc622-b74155a9e76b-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-242.21829.153" />
       </set>
     </attachedChunks>
   </component>
@@ -78,8 +85,12 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1729249514679</updated>
+      <workItem from="1731416974894" duration="4622000" />
     </task>
     <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="MAP-Elites" />

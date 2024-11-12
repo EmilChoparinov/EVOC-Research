@@ -183,28 +183,36 @@ def vae_loss(recon_x, x, mu, logvar, beta=0.001):
     kl_divergence = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
     return recon_loss + beta * kl_divergence
 
-def plot_fitness(distance_all, animal_similarity_all):
+def plot_fitness(fitnesses_all,distance_all, animal_similarity_all):
     max_distances = [np.min(distance) for distance in distance_all]
     max_similarities = [np.min(similarity) for similarity in animal_similarity_all]
-
-    sum_values = [0.7 * max_distance + 0.3 * max_similarity for max_distance, max_similarity in
-                  zip(max_distances, max_similarities)]
+    max_fitnesses = [np.min(fitness) for fitness in fitnesses_all]
     print("Max distances:", max_distances)
     print("Max similarities:", max_similarities)
+    print("Max fitnesses:", max_fitnesses)
     iterations = np.arange(1, len(distance_all) + 1)
 
-    plt.figure(figsize=(10, 6))
+    fig, axs = plt.subplots(3, 1, figsize=(10, 15))
 
-    plt.plot(iterations, max_distances, label="Distance", color='blue', marker='o')
+    axs[0].plot(iterations, max_distances, label="Distance", color='blue', marker='o')
+    axs[0].set_title("Distance over Generations")
+    axs[0].set_xlabel("Generation")
+    axs[0].set_ylabel("Max Distance")
+    axs[0].legend()
 
-    plt.plot(iterations, max_similarities, label="Animal Similarity", color='green', marker='x')
+    axs[1].plot(iterations, max_similarities, label="Animal Similarity", color='green', marker='x')
+    axs[1].set_title("Animal Similarity over Generations")
+    axs[1].set_xlabel("Generation")
+    axs[1].set_ylabel("Max Animal Similarity")
+    axs[1].legend()
 
-    plt.plot(iterations, sum_values, label="Sum of Distance & Animal Similarity", color='red', marker='s')
+    axs[2].plot(iterations, max_fitnesses, label="Sum of Distance & Animal Similarity", color='red', marker='s')
+    axs[2].set_title("Fitness over Generations")
+    axs[2].set_xlabel("Generation")
+    axs[2].set_ylabel("Max Fitness Value")
+    axs[2].legend()
 
-    plt.title("Fitness Plot: Distance vs Animal Similarity")
-    plt.xlabel("Generation")
-    plt.ylabel("Max Value")
-
-    # plt.xticks(iterations)
-    plt.legend()
+    plt.tight_layout()
     plt.show()
+
+

@@ -12,8 +12,8 @@ parser.add_argument("--cleanup", action="store_true", help="Delete *.csv, *.txt 
 parser.add_argument("--skip", action="store_true", help="Do not perform ea iterations")
 parser.add_argument("--runs", type=int, default=config.ea_runs_cnt, help="Times to run EA")
 parser.add_argument("--gens", type=int, default=config.ea_generations_cnt, help="How many generations per run")
-parser.add_argument("--alpha", type=float, required=True, help="Alpha value between 0 and 1.")
-parser.add_argument("--with-fit", type=str, choices=["distance", "similarity", "blended"], required=True, help="Specify the fitness function for EA.")
+parser.add_argument("--alpha", type=float, default=config.alpha, help="Alpha value between 0 and 1.")
+parser.add_argument("--with-fit", type=str, default=config.use_fit,choices=["distance", "similarity", "blended"], help="Specify the fitness function for EA.")
 
 # no initial value, each time must ensure alpha and fitness_function
 
@@ -38,8 +38,8 @@ def main():
     ea.process_ea_iteration(
         max_gen=args.gens,
         max_runs=args.runs,
+        alpha=args.alpha,
         fitness_function=args.with_fit,
-        alpha=args.alpha
     )
 
 if __name__ == '__main__':

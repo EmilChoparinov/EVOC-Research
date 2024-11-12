@@ -9,6 +9,8 @@ from config import alpha
 import logging
 import math
 import numpy as np
+
+from VAE import plot_fitness
 from typedef import simulated_behavior, genotype
 from data_collection import record_elite_generations
 
@@ -50,7 +52,7 @@ from rotation_scaling import get_data_with_forward_center,translation_rotation
 # TODO: This function has been primed to be embarrassingly parallel if more performance required.
 
 # def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt):
-def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt, fitness_function: str = "distance", alpha: float = None):
+def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt,alpha=config.alpha,fitness_function=config.fitness_functions):
 
     alpha = alpha if alpha is not None else config.alpha
 
@@ -60,17 +62,18 @@ def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt, fitne
     export_ea_metadata(max_runs)
 
     # Stack `max_run` times this function and save output
-    process_ea_iteration(max_gen, max_runs - 1)
+    process_ea_iteration(max_gen, max_runs - 1,alpha=config.alpha,fitness_function=config.fitness_functions)
     
     setup_logging(file_name=config.generate_log_file(max_runs))
     logging.info("Start CMA-ES Optimization")
     
     cma_es = config.generate_cma()
-    
+    distance_all=[]
+    animal_similarities_all=[]
+    fitnesses_all = []
     # Write the columns into the csv 
     behavior_csv = config.generate_fittest_xy_csv(max_runs)
     config.write_buffer.to_csv(behavior_csv, index=False)
-
 
     # EA Loop
     for generation_i in range(max_gen):
@@ -81,12 +84,12 @@ def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt, fitne
         solutions = cma_es.ask()
 
         robots, behaviors = ea_simulate_step(solutions)
-        #Rotation
-        # translation_rotation(get_data_with_forward_center(robots, behaviors))
-        # TODO scaling
-        
-        #fitnesses = -evaluate.evaluate(robots, behaviors)
-        fitnesses = -evaluate.evaluate(robots, behaviors)
+        fitnesses,distance,animal_similarity = evaluate.evaluate(robots, behaviors,alpha)
+
+        distance_all.append(distance)
+        animal_similarities_all.append(animal_similarity)
+        fitnesses_all.append(fitnesses)
+
 
         cma_es.tell(solutions, fitnesses)
 
@@ -119,7 +122,7 @@ def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt, fitne
         logging.info(f"Recording best fit behavior to {behavior_csv}")
         config.write_buffer.to_csv(behavior_csv, index=False, header=False, mode='a')
         config.write_buffer.drop(config.write_buffer.index, inplace=True)
-    
+    plot_fitness(fitnesses_all,distance_all, animal_similarities_all)
     # Do not need to flush the buffer at this step because it's always the
     # last thing the loop does.
     logging.info(f"EA Iteration {max_runs} complete")

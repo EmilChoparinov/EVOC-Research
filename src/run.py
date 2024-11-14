@@ -6,7 +6,6 @@ import os
 import logging
 import multiprocessing # import to run in Mac
 
-from typedef import fitness_functions
 from typing import get_args
 
 multiprocessing.set_start_method('fork', force=True)
@@ -34,7 +33,7 @@ parser.add_argument(
 
 parser.add_argument(
     "--with-fit", type=str, default=config.use_fit, 
-    choices=list(get_args(fitness_functions)), 
+    choices=list(get_args(config.fitness_function)), 
     help="Specify the fitness function for EA.")
 
 

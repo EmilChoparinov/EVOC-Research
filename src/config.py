@@ -55,7 +55,6 @@ from revolve2.simulators.mujoco_simulator import LocalSimulator
 
 from typing import Callable, Literal, TypedDict, get_args
 from types import SimpleNamespace
-from typedef import limbs, box_points, joint_points, fitness_functions
 
 import cma
 import pandas as pd
@@ -113,7 +112,9 @@ concurrent_simulators = 8
 ea_runs_cnt = 5
 ea_generations_cnt = 500
 alpha = 1
-use_fit: fitness_functions = 'distance'
+
+fitness_function = Literal['distance', 'similarity', 'blended']
+use_fit: fitness_function = 'distance'
 
 # Simulation Parameters ========================================================
 simulator = LocalSimulator(headless=True, num_simulators=concurrent_simulators)

@@ -9,6 +9,7 @@ out/
 *log
 *.txt
 *.pth
+*.mp4
 
 .swp
 

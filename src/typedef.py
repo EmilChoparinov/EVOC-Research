@@ -20,5 +20,3 @@ box_points = limbs | Literal[
 joint_points = limbs | Literal[
     'head_to_torso', 'torso_to_tail'
 ]
-
-fitness_functions = Literal['distance', 'similarity', 'blended']

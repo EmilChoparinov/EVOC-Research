@@ -8,6 +8,7 @@ import pandas as pd
 import ast
 
 
+
 # In order to standardize animal and robot dataset, tuple should be split to X and Y.
 # After this, they have same format
 def parse_and_split_coordinates(df, coordinate_columns):
@@ -39,6 +40,7 @@ def dtw_similarity(robot_data: pd.DataFrame, animal_data: pd.DataFrame) -> float
         return distance
     else:
         raise ValueError("Shape mismatch between robot and animal data, cannot calculate DTW.")
+
 
 def cos_similarity(robot_data: pd.DataFrame, animal_data: pd.DataFrame) -> float:
     # Ensure data shapes match before calculating cosine
@@ -87,7 +89,14 @@ def calculate_similarity(scale_data: pd.DataFrame) -> pd.DataFrame:
 
     return np.array(similarities)
 
-def combination_fitnesses(distance,df_robot,a=0.7):
+def combination_fitnesses(distance,df_robot,a=0.5):
+    '''
+    # For MSE DTW VAE +
+    # For cosine -
+    # distance[0,1] best:1  animal_similarity:[0,1] best:1
+    # fitness[-2:0] best:-2
+    '''
+
     # Read animal data
     # df_animal = pd.read_csv('./src/model//animal_data_head_orgin_884.csv')
 
@@ -96,14 +105,12 @@ def combination_fitnesses(distance,df_robot,a=0.7):
     # df_animal = infer_on_csv(df_animal)
     # animal_similarity
     animal_similarity = calculate_similarity(df_robot)
+    animal_similarity=(-1)*np.array(animal_similarity)
     animal_similarity=DTW_fitness_scaling(animal_similarity)
+    # distance=(-1)*np.array(distance)
     distance=distance_fitness_scaling(distance)
-    # For MSE DTW VAE +
-    # For cosine -
-    # distance[-1,0] best:-1  animal_similarity:[0,1] best:0
-    # fitness[-1:1] best:-1
-    distance=(-1)*a*np.array(distance)
-    combination=distance+(1-a)*np.array(animal_similarity)
+
+    combination=-a*np.array(distance)-(1-a)*np.array(animal_similarity)
     print("combined_fitnesses",combination)
     return combination,distance,animal_similarity
 
@@ -124,10 +131,10 @@ def distance_fitness_scaling(fitnesses):
 
 
 def DTW_fitness_scaling(fitnesses):
-    # best 0 worst 1
+    # best 1 worst 0
     scaled_fitness=[]
-    min_f =3400000
-    max_f =5150817
+    min_f =-5400000
+    max_f =-3400000
     if min_f > np.min(fitnesses):
         min_f = np.min(fitnesses)
     if max_f < np.max(fitnesses):

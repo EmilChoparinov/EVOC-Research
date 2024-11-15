@@ -7,6 +7,7 @@
     <list default="true" id="1639dd26-dfc4-499a-952e-17a0823e4c2f" name="Changes" comment="MAP-Elites">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/VAE.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/VAE.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/animal_similarity.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/animal_similarity.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/rotation_scaling.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/rotation_scaling.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -44,20 +45,20 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "YS__W",
-    "last_opened_file_path": "/home/vlad/Desktop/Personal Projects/EVOC-Research/src",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "preferences.pluginManager",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;YS__W&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/vlad/Desktop/Personal Projects/EVOC-Research/src&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/runnable/EA" />
@@ -80,7 +81,10 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1729249514679</updated>
-      <workItem from="1731416974894" duration="5475000" />
+      <workItem from="1731416974894" duration="6235000" />
+      <workItem from="1731457799258" duration="599000" />
+      <workItem from="1731546835658" duration="9063000" />
+      <workItem from="1731634952393" duration="6329000" />
     </task>
     <servers />
   </component>

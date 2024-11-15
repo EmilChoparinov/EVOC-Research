@@ -184,8 +184,8 @@ def vae_loss(recon_x, x, mu, logvar, beta=0.001):
     return recon_loss + beta * kl_divergence
 
 def plot_fitness(fitnesses_all,distance_all, animal_similarity_all):
-    max_distances = [np.min(distance) for distance in distance_all]
-    max_similarities = [np.min(similarity) for similarity in animal_similarity_all]
+    max_distances = [np.max(distance) for distance in distance_all]
+    max_similarities = [np.max(similarity) for similarity in animal_similarity_all]
     max_fitnesses = [np.min(fitness) for fitness in fitnesses_all]
     print("Max distances:", max_distances)
     print("Max similarities:", max_similarities)

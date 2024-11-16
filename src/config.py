@@ -52,8 +52,9 @@ from revolve2.modular_robot.brain.cpg import active_hinges_to_cpg_network_struct
 from revolve2.modular_robot_physical import Config, UUIDKey
 
 from revolve2.simulators.mujoco_simulator import LocalSimulator
-from typing import Callable, Literal, TypedDict,get_args
-from typedef import fitness_functions
+
+from typing import Callable, Literal, TypedDict, get_args
+from types import SimpleNamespace
 
 import cma
 import pandas as pd
@@ -84,6 +85,15 @@ def body_to_csv_map(body: BodyV2):
         "left_hind": body.core_v2.back_face.bottom.attachment.front.attachment.left.attachment
     }
 
+cameras = [
+    'rtsp://admin:Robocam_0@10.15.1.181:554/cam/realmonitor?channel=1&subtype=0',
+    'rtsp://admin:Robocam_0@10.15.1.183:554/cam/realmonitor?channel=1&subtype=0',
+    'rtsp://admin:Robocam_0@10.15.1.198:554/cam/realmonitor?channel=1&subtype=0',
+    'rtsp://admin:Robocam_0@10.15.1.199:554/cam/realmonitor?channel=1&subtype=0',
+    'rtsp://admin:Robocam_0@10.15.1.200:554/cam/realmonitor?channel=1&subtype=0',
+    'rtsp://admin:Robocam_0@10.15.1.201:554/cam/realmonitor?channel=1&subtype=0',
+]
+
 def generate_fittest_xy_csv(run_id: int = 0) -> str:
     return f"most-fit-xy-run-{run_id}.csv"
 
@@ -101,9 +111,10 @@ cpg_network_struct, output_mapping = active_hinges_to_cpg_network_structure_neig
 concurrent_simulators = 8
 ea_runs_cnt = 5
 ea_generations_cnt = 500
-alpha = 0.7
-use_fit: fitness_functions = 'blended'
+alpha = 1
 
+fitness_function = Literal['distance', 'similarity', 'blended']
+use_fit: fitness_function = 'distance'
 
 # Simulation Parameters ========================================================
 simulator = LocalSimulator(headless=True, num_simulators=concurrent_simulators)
@@ -129,7 +140,6 @@ write_buffer = pd.DataFrame(columns=csv_cols)
 # Write to this CSV the best genotype per EA run
 best_solution_per_ea = "best-solutions-per-ea.csv"
 
-
 # Typedef for valid box on robot
 phys_box_names = Literal["left_arm", "right_arm", "torso", "tail", "left_leg", "right_leg"]
 
@@ -150,7 +160,9 @@ class PhysMap(TypedDict):
         }
         return phy_map[box]
     
-    def map_with(body: BodyV2) -> dict[phys_box_names, 'PhysMap']:
+    def get_hinge(body: BodyV2, box: phys_box_names): pass
+
+    def map_with(body: BodyV2) -> 'PhysMap':
         return {
             "left_arm": {
                 "pin": 0,

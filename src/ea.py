@@ -40,8 +40,9 @@ def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt):
         # Evaluation Step
         solutions = cma_es.ask()
         robots, behaviors = ea_simulate_step(solutions)
+        # fitnesses = -evaluate.evaluate_angle_actualization(robots, behaviors)
         fitnesses = -evaluate.evaluate_via_target_approx(
-            robots, behaviors, np.deg2rad(90)
+            robots, behaviors, np.deg2rad(180)
         )
         # fitnesses = -evaluate.evaluate_pose_x_delta(robots, behaviors)
         # fitnesses = -evaluate.evaluate(robots, behaviors)

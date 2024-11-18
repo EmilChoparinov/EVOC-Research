@@ -111,7 +111,7 @@ simulator = LocalSimulator(headless=True, num_simulators=concurrent_simulators)
 terrain = terrains.flat()
 
 # The living time of the simulation in seconds
-simulation_ttl = 30
+simulation_ttl = 10
 
 # Data Collection Parameters ===================================================
 csv_cols = [

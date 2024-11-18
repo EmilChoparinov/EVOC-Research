@@ -9,6 +9,7 @@ import pandas as pd
 import numpy as np
 import numpy.typing as npt
 import math
+from scipy.stats import norm
 
 from theory import coords_to_rad_vspace, polar_to_cartesian_2d, rel_op, cartesian_to_polar_nd
 
@@ -185,9 +186,9 @@ def get_pose_muscle_effiency(robot: ModularRobot, behavior: simulated_behavior) 
     def eval_effiency(s0: ModularRobotSimulationState, sN: ModularRobotSimulationState):
         hinges = robot.body.find_modules_of_type(ActiveHingeV2)
         
-        s0_hinges = [s0.get_hinge_position(h)*25 for h in hinges]
-        sN_hinges = [sN.get_hinge_position(h)*25 for h in hinges]
-        
+        s0_hinges = [s0.get_hinge_position(h) for h in hinges]
+        sN_hinges = [sN.get_hinge_position(h) for h in hinges]
+
         # Calculates the overall effiency of the robot in this specific state
         x = sum([
             math.pow(abs(s0_pos - sN_pos),3)
@@ -278,6 +279,33 @@ def get_pose_maximal_rotation_filter_dir(robot: ModularRobot, behavior: simulate
      for idx_cur, idx_next in state_pairs]
     return sum(rad[0] for rad in rad_deltas if (go_left and rad[1] == "left") or (not go_left and rad[1] == "right"))
 
+def get_pose_actualize_angle(robot: ModularRobot, behavior: simulated_behavior, p: float):
+    """
+    Use a gaussian distribution to reinforce using angles in the body instead of
+    keeping the body straight. This corresponds mainly for the arms and legs.
+    """
+    body = PhysMap.map_with(robot.body)
+    whitelist = [
+        body["left_arm"]["hinge"],
+        body["right_arm"]["hinge"],
+        body["left_leg"]["hinge"],
+        body["right_leg"]["hinge"],
+    ]
+
+    def eval_angle(s0: ModularRobotSimulationState):
+        return sum(
+            [norm.pdf(e,p,0.1) for e in [
+                s0.get_hinge_position(h) for h in whitelist]]
+        )
+
+    total_states = len(behavior)
+
+    # Return the sum of all probabilties that the hinge is at `p`
+    return sum(
+        [eval_angle(states.get_modular_robot_simulation_state(robot)) 
+        for states in behavior]
+    )
+
 def evaluate_angle_with_projection_with_z_avg(
     robots: list[ModularRobot], behaviors: list[simulated_behavior], 
     run_idx: int, gen_idx: int
@@ -291,7 +319,6 @@ def evaluate_angle_with_projection_with_z_avg(
     return np.array([
         evalf(robot, states) for robot, states in zip(robots, behaviors)
     ])
-
 
 def evaluate_via_target_approx(robots: list[ModularRobot], behaviors: list[simulated_behavior], theta: float) -> npt.NDArray[np.float_]:
     """
@@ -313,7 +340,8 @@ def evaluate_via_target_approx(robots: list[ModularRobot], behaviors: list[simul
     def evalf(robot: ModularRobot, states: simulated_behavior):
         optimize = get_pose_nd_projected_mag(robot, states, cart_target_vec)
 
-        penalize = get_pose_muscle_effiency(robot, states)/100
+        penalize = get_pose_actualize_angle(robot, states, 1)
+        # penalize = get_pose_muscle_effiency(robot, states)
         print(f"{optimize=}\n{penalize=}")
         return optimize * penalize
         # return optimize - penalize / 2
@@ -321,6 +349,16 @@ def evaluate_via_target_approx(robots: list[ModularRobot], behaviors: list[simul
     return np.array([
         evalf(robot, states) for robot,states in zip(robots, behaviors)
     ]) 
+
+def evaluate_angle_actualization(robots: list[ModularRobot], behaviors: list[simulated_behavior]) -> npt.NDArray[np.float_]:
+    """
+    Perform evaluation on how well the robot is able to retain an angle on its 
+    limbs
+    """
+    return np.array([
+        get_pose_actualize_angle(robot, behavior, 1)
+        for robot, behavior in zip(robots, behaviors) 
+    ])
 
 def evaluate_pose_x_delta(robots: list[ModularRobot], behaviors: list[simulated_behavior]) -> npt.NDArray[np.float_]:
     """

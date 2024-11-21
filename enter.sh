@@ -6,9 +6,12 @@ if [ -d ".venv" ]; then
     echo "Using $PWD/.venv/bin/activate"
 else
     echo "===== Creating a new virtual environment ====="
+    echo "MAKE SURE YOU ARE ON PROJECT ROOT!!!!"
     python3 -m venv .venv
     source .venv/bin/activate
     echo "===== Made $PWD/.venv/bin/activate ====="
+    echo "===== INSTALLING \`.\` ====="
+    python3 -m pip install -r requirements.txt 
     echo "===== INSTALLING \`.mulitneat-detached\` ====="
     cd .multineat-detached
     pip install .

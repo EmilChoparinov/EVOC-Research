@@ -1,0 +1,13 @@
+!!omap
+- manipulator: !!omap
+  - name: gecko
+  - keypoints:
+    - name: head
+      friendly_name: head
+      ros_frame: head
+    - name: box
+      friendly_name: box
+      ros_frame: box
+    - name: joint
+      friendly_name: joint
+      ros_frame: joint

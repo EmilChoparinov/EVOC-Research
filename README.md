@@ -17,6 +17,8 @@ sudo pacman -S cereal
 
 # apt
 sudo apt install cereal
+
+
 ```
 
 - Compatible with: Linux, MacOS Sequoia, Windows 10/11 (Under WSL)
@@ -77,6 +79,24 @@ Tail: 24
 ```
 
 Use the above legend as a reference when editing physical robot related code.
+
+## run the video_infer 
+pre
+```
+#ruamel
+pip install ruamel.yaml
+
+#albumentations
+pip install albumentations
+#webcolors
+pip install webcolors
+
+```
+
+run
+```
+python3 video2csv.py
+```
 
 
 ## Contacts

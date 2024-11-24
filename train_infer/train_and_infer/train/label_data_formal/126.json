@@ -1,0 +1,35 @@
+{
+    "objects": [
+        {
+            "class": "gecko",
+            "keypoints": [
+                {
+                    "name": "head",
+                    "location": [],
+                    "projected_location": []
+                },
+                {
+                    "name": "joint",
+                    "location": [],
+                    "projected_location": []
+                },
+                {
+                    "name": "box",
+                    "location": [
+                        [
+                            0,
+                            0,
+                            0
+                        ]
+                    ],
+                    "projected_location": [
+                        [
+                            732,
+                            435
+                        ]
+                    ]
+                }
+            ]
+        }
+    ]
+}

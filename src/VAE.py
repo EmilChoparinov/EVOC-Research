@@ -12,8 +12,13 @@ from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial.distance import cdist
+import os
+from matplotlib.colors import ListedColormap
+import matplotlib.pyplot as plt
+
 
 def VAE_similarity(df_robot: pd.DataFrame, df_animal: pd.DataFrame) -> list:
+    # print("df_animal",df_animal)
     df_robot = df_robot.drop(columns=['frame'], errors='ignore')
     df_animal = df_animal.drop(columns=['frame'], errors='ignore')
     df_animal = df_animal.drop(columns=['robot_index'], errors='ignore')
@@ -60,7 +65,7 @@ def infer_on_csv(df: pd.DataFrame) -> pd.DataFrame:
     latent_dim = 50
     input_dim = 14 * 5
     vae_loaded = VAE(input_dim, latent_dim)
-    model_save_path = './src/model/vae_model.pth'
+    model_save_path ='/Users/jowonkim/Documents/GitHub/EVOC-Research/src/model/vae_model.pth'
     vae_loaded.load_state_dict(torch.load(model_save_path, weights_only=True)) 
     vae_loaded.eval()
 
@@ -137,7 +142,7 @@ class VAE(nn.Module):
         super(VAE, self).__init__()
         # Encoder layers
         self.fc1 = nn.Linear(input_dim, 128)
-        self.bn1 = nn.BatchNorm1d(128)
+        # self.bn1 = nn.BatchNorm1d(128)
         self.fc2 = nn.Linear(128, 64)
         self.fc31 = nn.Linear(64, latent_dim)  # mean
         self.fc32 = nn.Linear(64, latent_dim)  # log variance
@@ -183,13 +188,16 @@ def vae_loss(recon_x, x, mu, logvar, beta=0.001):
     kl_divergence = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
     return recon_loss + beta * kl_divergence
 
-def plot_fitness(fitnesses_all,distance_all, animal_similarity_all):
+def plot_fitness(fitnesses_all,distance_all, animal_similarity_all,alpha,similarity_type):
     max_distances = [np.max(distance) for distance in distance_all]
     max_similarities = [np.max(similarity) for similarity in animal_similarity_all]
     max_fitnesses = [np.min(fitness) for fitness in fitnesses_all]
     print("Max distances:", max_distances)
     print("Max similarities:", max_similarities)
     print("Max fitnesses:", max_fitnesses)
+
+    distance_animalsimilarity(max_distances,max_similarities,alpha,similarity_type)
+    plot_best_fitnesses(max_fitnesses)
     iterations = np.arange(1, len(distance_all) + 1)
 
     fig, axs = plt.subplots(3, 1, figsize=(10, 15))
@@ -214,6 +222,50 @@ def plot_fitness(fitnesses_all,distance_all, animal_similarity_all):
     axs[2].legend()
 
     # plt.tight_layout()
+    plt.show()
+
+def distance_animalsimilarity(distance,animal_similarity,alpha,similarity_type):
+    distance=3*np.array(distance)
+    colors = np.linspace(0, len(distance)-1, len(distance))
+
+    plt.figure(figsize=(8, 5))
+    scatter = plt.scatter(animal_similarity, distance, c=colors,cmap='viridis')
+    plt.colorbar(scatter, label="")
+    plt.xlabel(f"{similarity_type}_Similarity")
+    plt.ylabel("Distance")
+    plt.title(f"Alpha={alpha}")
+    plt.grid(True)
+    plt.show()
+
+
+
+
+def plot_best_fitnesses(max_fitnesses):
+    running_max = []
+    current_max = float('inf')
+    best_fitness_positions = []  # 用于记录最好的 fitness 值的位置序号
+    for i in range(len(max_fitnesses)):
+        current_max = min(current_max, max_fitnesses[i])
+        running_max.append(current_max)
+        # 如果当前fitness是最好的，则记录它的索引
+        if max_fitnesses[i] == current_max:
+            best_fitness_positions.append(i)
+    print("Best fitness positions:", best_fitness_positions)
+    max_fitnesses = max_fitnesses[:240]
+    running_max = running_max[:240]
+
+    plt.figure(figsize=(20, 8))
+
+    # 蓝色：每一次实验的 fitness 值
+    plt.bar(range(len(max_fitnesses)), [-val for val in max_fitnesses], color='b', label="Fitness at each iteration")
+
+    # 红色：迄今为止的最高 fitness 值
+    plt.plot([-val for val in running_max], marker='o', linestyle='-', color='r', label='Best fitness')
+    plt.title('Fitnesses')
+    plt.xlabel('Generations')
+    plt.ylabel('Fitnesses Value')
+    plt.grid(True)
+    plt.legend()
     plt.show()
 
 

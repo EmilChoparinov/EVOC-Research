@@ -6,6 +6,7 @@ import numpy as np
 import config
 import os
 
+from config import body_to_csv_map
 from typedef import simulated_behavior
 
 def record_cpg(robot: ModularRobot, run_id: int):
@@ -63,4 +64,59 @@ def record_elite_generations(run_id: int, generation: int, fitness: float, matri
     filename = f"elite-generations-{run_id}.csv"
     header = not os.path.isfile(filename)
     df.to_csv(filename, mode='a', index=False, header=not os.path.isfile(filename)) #pd.io.common.file_exists(filename))
+
+
+# def record_best_fitness_generation_csv(
+#         robot: ModularRobot,
+#         fitness: float,
+#         behavior: simulated_behavior,
+#         generation_id: int,
+#         output_file: str = "best_generations.csv",
+#         alpha: float = 1.0,
+#         fitness_function: str = "distance"
+# ):
+#     """
+#     记录每一代的最佳个体到 CSV 文件，包括行为坐标。
+#
+#     Args:
+#         generation_id (int): 当前代数。
+#         robot (ModularRobot): 最优机器人对象。
+#         fitness (float): 最优适应度值。
+#         behavior (simulated_behavior): 最优行为数据。
+#         output_file (str): 输出的 CSV 文件名。
+#         alpha (float): 混合参数 alpha。
+#         fitness_function (str): 使用的适应度函数类型。
+#     """
+#     if not os.path.exists(output_file):
+#         with open(output_file, 'w') as f:
+#             f.write("generation_id,fitness,alpha,fitness_function,head,middle,rear,right_front,left_front,right_hind,left_hind\n")
+#     csv_map = config.body_to_csv_map(robot.body)
+#     for idx, state in enumerate(behavior):
+#         try:
+#             pose_func = state.get_modular_robot_simulation_state(robot).get_module_absolute_pose
+#             module_coords = {
+#                 module_name: pose_func(csv_map[module_name]).position
+#                 for module_name in ["head", "middle", "rear", "right_front", "left_front", "right_hind", "left_hind"]
+#             }
+#             # print(module_coords)
+#             record = {
+#                 "generation_id": generation_id,
+#                 "fitness": fitness,
+#                 "alpha": alpha,
+#                 "fitness_function": fitness_function,
+#                 "head": f"({module_coords['head'].x:.2f},{module_coords['head'].y:.2f})",
+#                 "middle": f"({module_coords['middle'].x:.2f},{module_coords['middle'].y:.2f})",
+#                 "rear": f"({module_coords['rear'].x:.2f},{module_coords['rear'].y:.2f})",
+#                 "right_front": f"({module_coords['right_front'].x:.2f},{module_coords['right_front'].y:.2f})",
+#                 "left_front": f"({module_coords['left_front'].x:.2f},{module_coords['left_front'].y:.2f})",
+#                 "right_hind": f"({module_coords['right_hind'].x:.2f},{module_coords['right_hind'].y:.2f})",
+#                 "left_hind": f"({module_coords['left_hind'].x:.2f},{module_coords['left_hind'].y:.2f})"
+#             }
+#             df = pd.DataFrame([record])
+#             df.to_csv(output_file, mode='a', index=False, header=False)
+#             # print(f"Frame {idx} of generation {generation_id} saved to {output_file}")
+#         except Exception as e:
+#             print(f"Error processing frame {idx} in generation {generation_id}: {e}")
+
+
 

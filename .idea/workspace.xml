@@ -8,7 +8,15 @@
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/VAE.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/VAE.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/animal_similarity.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/animal_similarity.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/config.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/data_collection.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/data_collection.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/ea.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/ea.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/evaluate.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/evaluate.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/model/vae_model.pth" beforeDir="false" afterPath="$PROJECT_DIR$/src/model/vae_model.pth" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/rotation_scaling.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/rotation_scaling.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/run.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/run.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/run_experiments.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/run_experiments.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/typedef.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/typedef.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -49,7 +57,8 @@
   &quot;keyToString&quot;: {
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;YS__W&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/home/vlad/Desktop/Personal Projects/EVOC-Research/src&quot;,
+    &quot;last_directory_selection&quot;: &quot;/Users/jowonkim/Documents/GitHub/EVOC-Research&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/jowonkim/Documents/GitHub/EVOC-Research/src/model&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
@@ -60,7 +69,12 @@
   }
 }</component>
   <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/src/model" />
+      <recent name="$PROJECT_DIR$" />
+    </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/src/model" />
       <recent name="$PROJECT_DIR$/runnable/EA" />
       <recent name="$PROJECT_DIR$/runnable" />
     </key>
@@ -84,7 +98,15 @@
       <workItem from="1731416974894" duration="6235000" />
       <workItem from="1731457799258" duration="599000" />
       <workItem from="1731546835658" duration="9063000" />
-      <workItem from="1731634952393" duration="6329000" />
+      <workItem from="1731634952393" duration="20212000" />
+      <workItem from="1731827583355" duration="9953000" />
+      <workItem from="1731861044484" duration="3038000" />
+      <workItem from="1731897438267" duration="14627000" />
+      <workItem from="1731914846266" duration="16476000" />
+      <workItem from="1731979835714" duration="599000" />
+      <workItem from="1732070127544" duration="598000" />
+      <workItem from="1732154375867" duration="599000" />
+      <workItem from="1732237680583" duration="5457000" />
     </task>
     <servers />
   </component>

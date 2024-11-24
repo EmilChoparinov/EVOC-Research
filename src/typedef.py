@@ -13,3 +13,5 @@ simulated_behavior = list[SceneSimulationState]
 
 
 fitness_functions = Literal['distance', 'similarity', 'blended']
+
+similarity_type=Literal["VAE","DTW","MSE","Cosine"]

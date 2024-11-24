@@ -18,7 +18,7 @@ def get_pose_x_delta(state0: ModularRobotSimulationState, stateN: ModularRobotSi
     return state0.get_pose().position.x - stateN.get_pose().position.x
 
 
-def evaluate(robots: list[ModularRobot], behaviors: list[simulated_behavior],alpha=0.7) -> npt.NDArray[
+def evaluate(robots: list[ModularRobot], behaviors: list[simulated_behavior],df_animal,alpha,similarity_type) -> npt.NDArray[
     np.float_]:
     """
     Perform combined evaluation over a list of robots.
@@ -31,10 +31,10 @@ def evaluate(robots: list[ModularRobot], behaviors: list[simulated_behavior],alp
             states[-1].get_modular_robot_simulation_state(robot)
         ) for robot, states in zip(robots, behaviors)
     ])
-
+    # print("df_animal",df_animal)
     df_robot = size_scaling(translation_rotation(get_data_with_forward_center(robots, behaviors)))
     # Combination_fitnesses to get combined fitness, distance, and similarity
-    combined_fitness, distance, animal_similarity = combination_fitnesses(distance_scores, df_robot, alpha)
+    combined_fitness, distance, animal_similarity= combination_fitnesses(distance_scores, df_robot,df_animal, alpha,similarity_type)
 
     return combined_fitness,distance,animal_similarity
 

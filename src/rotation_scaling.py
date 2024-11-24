@@ -216,5 +216,5 @@ def size_scaling(df: pd.DataFrame) -> pd.DataFrame:
         })
 
     scaled_robot_data = pd.DataFrame(scaled_robot_data)
-    print(scaled_robot_data.head(3))
+    # print(scaled_robot_data.head(3))
     return scaled_robot_data

@@ -1,9 +1,11 @@
 import os
 import subprocess
 
+from src.typedef import similarity_type
+
 alpha_values = [1, 0.5, 0]
 fitness_functions = ["distance", "similarity", "blended"]
-
+similarity_type=["DTW", "MSE", "Cosine","VAE"]
 for alpha in alpha_values:
     for fit in fitness_functions:
         print(f"Running with alpha={alpha} and fitness function={fit}")

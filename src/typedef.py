@@ -11,12 +11,7 @@ genotype = npt.NDArray[np.float_]
 population = List[ModularRobot]
 simulated_behavior = list[SceneSimulationState]
 
-limbs = Literal['left_arm','left_leg','right_arm','right_leg']
 
-box_points = limbs | Literal[ 
-    'torso', 'tail', 'head'
-]
+fitness_functions = Literal['distance', 'similarity', 'blended']
 
-joint_points = limbs | Literal[
-    'head_to_torso', 'torso_to_tail'
-]
+similarity_type=Literal["VAE","DTW","MSE","Cosine"]

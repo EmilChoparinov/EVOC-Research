@@ -12,8 +12,8 @@ import numpy as np
 
 from VAE import plot_fitness,infer_on_csv
 from typedef import simulated_behavior, genotype
-from data_collection import record_elite_generations
-
+from data_collection import record_elite_generations,record_best_fitness_generation_csv
+from animal_similarity import create_simulation_video
 import data_collection
 import evaluate
 import config
@@ -112,8 +112,8 @@ def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt,alpha=
             run_id=max_runs, generation=generation_i, fitness=best_fitness, matrix=best_robot.brain._weight_matrix,
             alpha=alpha, fitness_function=fitness_function)
 
-        # record_best_fitness_generation_csv(best_robot, best_fitness, best_behavior, generation_id=generation_i, alpha=alpha,
-        #     fitness_function=fitness_function)
+        record_best_fitness_generation_csv(best_robot, best_fitness, best_behavior, generation_id=generation_i, alpha=alpha,
+            fitness_function=fitness_function,similarity_type=similarity_type)
 
         # top 3 fitness and corresponding robots and weight matrices
         top_3_indices = sorted(range(len(fitnesses)), key=lambda i: fitnesses[i], reverse=True)[:3]
@@ -138,6 +138,7 @@ def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt,alpha=
             raise
     plot_fitness(fitnesses_all,distance_all, animal_similarities_all,alpha,similarity_type)
 
+    create_simulation_video()
     # Do not need to flush the buffer at this step because it's always the
     # last thing the loop does.
     logging.info(f"EA Iteration {max_runs} complete")

@@ -22,7 +22,9 @@ from revolve2.standards.modular_robots_v2 import gecko_v2, snake_v2
 from revolve2.modular_robot.body.base import ActiveHinge
 
 import pandas as pd
+import threading
 import numpy as np
+import cv2
 
 from dataclasses import dataclass
 from typing import Literal
@@ -40,13 +42,15 @@ from revolve2.modular_robot_physical import Config, UUIDKey
 from revolve2.modular_robot_physical.remote import run_remote
 
 from src.network_layer import remote_control_with_polling_rate
-from src.config import PhysMap
+from src.config import PhysMap, cameras
 
 import numpy as np
 
 import threading
 from pprint import pprint
 import math
+import time
+
 
 # These CPG params are ordered from the 30-runs-300-gen-distance-only.zip file
 batch_cpg_params = [
@@ -114,7 +118,7 @@ batch_cpg_params = [
     [-1.6459108 ,  0.57498081,  0.00844196, -1.99963482,  0.81886104,
        -1.7708486 ,  0.89132614, -1.50606673, -0.86288779]
 ]
-import pdb;pdb.set_trace()
+
 
 body = gecko_v2()
 
@@ -172,7 +176,7 @@ class BatchTesterBrainInstance(BrainInstance):
         else:
             self.capture_dt = True
             input(f"Loaded CPG Index: {self.idx}. Press enter to start test next test")
-        
+
         # After 30 seconds, we progress to the next CPG
         if(self.dt0 > 5):
             self.idx += 1
@@ -197,6 +201,7 @@ robot = ModularRobot(body=body,
 def on_prepared() -> None:
     print("Robot is ready. Press enter to start")
     input()
+
 pmap = PhysMap.map_with(body)
 body_map: dict[int, ActiveHingeV2] = {
         31: body.core_v2.right_face.bottom, # right arm
@@ -215,10 +220,14 @@ config = Config(
     inverse_servos={v["pin"]: v["is_inverse"] for k,v in pmap.items()},
 )
 
+# t = threading.Thread(target=record_process)
+
 print("Initializing robot..")
+# t.start()
 remote_control_with_polling_rate(
     config=config,
     port=20812,
     hostname="10.15.3.59",
     rate=10
 )
+# t.join()

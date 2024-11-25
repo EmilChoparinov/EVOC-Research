@@ -8,6 +8,19 @@ import pandas as pd
 import ast
 import cv2
 
+
+#
+
+
+
+
+
+
+
+
+
+
+
 # In order to standardize animal and robot dataset, tuple should be split to X and Y.
 # After this, they have same format
 def parse_and_split_coordinates(df, coordinate_columns):
@@ -128,6 +141,10 @@ def combination_fitnesses(distance,df_robot,df_animal,a,similarity_type):
         animal_similarity=VAE_similarity(df_robot,df_animal)
         animal_similarity = (-1) * np.array(animal_similarity)
         animal_similarity=VAE_fitness_scaling(animal_similarity)
+    #
+    else:
+        animal_similarity = calculate_similarity(df_robot,similarity_type)
+
 
     distance=distance_fitness_scaling(distance)
     combination=-a*np.array(distance)-(1-a)*np.array(animal_similarity)
@@ -236,6 +253,10 @@ def create_simulation_video(frame_width=1280, frame_height=960, fps=10):
     # Read animal and robot data
     data_animal = pd.read_csv(data_animal_path)
     data_robot = pd.read_csv(data_robot_path)
+    # visualize the last_generation
+    last_generation_id = data_robot['generation_id'].max()
+    data_robot=data_robot[data_robot['generation_id'] == last_generation_id]
+    print("\ndata_robot\n",data_robot)
     transformed_df = translate_and_rotate(data_robot)
     scaled_robot_df = scale_robot_coordinates(data_animal, transformed_df)
     data_robot=scaled_robot_df
@@ -326,6 +347,8 @@ def parse_tuple(value):
     except (ValueError, SyntaxError):
         print(f"Error parsing value: {value}")
         return np.array([np.nan, np.nan])
+
+
 def calculate_and_add_center(df):
     """
     计算中心点 (center-euclidian) 并添加到数据帧中。
@@ -339,7 +362,8 @@ def calculate_and_add_center(df):
     # 定义需要的关键点列
     keypoints = ['head', 'middle', 'rear', 'right_front', 'left_front', 'right_hind', 'left_hind']
 
-    # 确保数据帧中包含所有关键点列
+    # 确保数据帧中包含所有关键点列ls
+
     missing_columns = [col for col in keypoints if col not in df.columns]
     if missing_columns:
         raise ValueError(f"Missing columns: {', '.join(missing_columns)}")
@@ -451,10 +475,10 @@ def parse_tuple_string(s):
     return None
 
 
+
+
 def scale_robot_coordinates(df_animal, df_robot):
     coordinates_2_list = []
-
-    # 遍历机器人的帧
     for index, frame in df_robot.iterrows():
         coordinates_2 = {
             'head': parse_tuple_string(frame['head']),
@@ -495,7 +519,6 @@ def scale_robot_coordinates(df_animal, df_robot):
 
         if max_distance_animal > global_max_distance_animal:
             global_max_distance_animal = max_distance_animal
-
         # 机器人最大距离计算
         robot_coordinates = list(coordinates_2_list[i].values())
         robot_head = np.array(coordinates_2_list[i]['head'])
@@ -506,12 +529,12 @@ def scale_robot_coordinates(df_animal, df_robot):
             global_max_distance_robot = max_distance_robot
 
     scaling_factor = global_max_distance_animal / global_max_distance_robot
-    print(f"Scaling factor: {scaling_factor}")
+    # print(f"Scaling factor: {scaling_factor}")
     # 缩放机器人的数据
     scaled_robot_data = []
     first_robot_head = np.array(coordinates_2_list[0]['head'])
-
-    for i in range(len(df_robot)):
+    print("first_robot_head",first_robot_head)
+    for i in range(len(coordinates_2_list)):
         robot_coordinates = list(coordinates_2_list[i].values())
         scaled_robot_coordinates = (np.array(robot_coordinates) - first_robot_head) * scaling_factor + first_robot_head
 
@@ -525,11 +548,20 @@ def scale_robot_coordinates(df_animal, df_robot):
             'right_hind': tuple(scaled_robot_coordinates[5]),
             'left_hind': tuple(scaled_robot_coordinates[6]),
         })
+    scaled_robot_data=pd.DataFrame(scaled_robot_data)
+    # print("\nscaled_robot_data\n",scaled_robot_data.head(15))
+    return scaled_robot_data
 
-    return pd.DataFrame(scaled_robot_data)
 
 
-# 提取关键点向量
+
+
+
+
+
+
+
+
 def extract_keypoints(data_dict):
     keypoints = []
 

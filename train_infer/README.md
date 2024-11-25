@@ -102,22 +102,34 @@ python3 train_network.py -i ./label_data_formal -ar arch_configs/dream_vgg_q.yam
 - Use the trained model for inference on new data:
   python video2csv.py 
 
-### 2. Robot Control and Experimentation
+[//]: # (### 2. Robot Control and Experimentation)
 
-#### 2.1 Setup Robot Control
-- Navigate to robot_control_and_exp/robot_control/examples/physical_robot_remote/
-- Review and modify main.py to incorporate your trained model and desired control algorithms
+[//]: # ()
+[//]: # (#### 2.1 Setup Robot Control)
 
-#### 2.2 Prepare Web Camera Monitoring
-- Go to robot_control_and_exp/web_camera/
-- Configure web_camera.py for your specific camera setup:
-  python web_camera.py path/to/experiment_footage/
+[//]: # (- Navigate to robot_control_and_exp/robot_control/examples/physical_robot_remote/)
 
-#### 2.3 Run Experiment
-- Start the web camera recording
-- Execute the robot control script:
-  python main.py --model_path path/to/dream_model.pth --experiment_duration 600
-- Monitor the experiment in real-time and ensure data is being recorded properly
+[//]: # (- Review and modify main.py to incorporate your trained model and desired control algorithms)
+
+[//]: # ()
+[//]: # (#### 2.2 Prepare Web Camera Monitoring)
+
+[//]: # (- Go to robot_control_and_exp/web_camera/)
+
+[//]: # (- Configure web_camera.py for your specific camera setup:)
+
+[//]: # (  python web_camera.py path/to/experiment_footage/)
+
+[//]: # ()
+[//]: # (#### 2.3 Run Experiment)
+
+[//]: # (- Start the web camera recording)
+
+[//]: # (- Execute the robot control script:)
+
+[//]: # (  python main.py --model_path path/to/dream_model.pth --experiment_duration 600)
+
+[//]: # (- Monitor the experiment in real-time and ensure data is being recorded properly)
 
 ### 3. Data Analysis
 

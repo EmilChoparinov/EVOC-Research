@@ -90,7 +90,7 @@ def record_best_fitness_generation_csv(
     """
     if not os.path.exists(output_file):
         with open(output_file, 'w') as f:
-            f.write("generation_id,fitness,alpha,fitness_function,head,middle,rear,right_front,left_front,right_hind,left_hind\n")
+            f.write("generation_id,fitness,alpha,similarity_type,fitness_function,head,middle,rear,right_front,left_front,right_hind,left_hind\n")
     csv_map = config.body_to_csv_map(robot.body)
     for idx, state in enumerate(behavior):
         try:

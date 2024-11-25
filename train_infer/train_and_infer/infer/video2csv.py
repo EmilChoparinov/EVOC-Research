@@ -146,7 +146,7 @@ def network_inference(args):
 
             tmp_image = np.array(keypoints_wrtNetInput_overlay)
             # draw center with yellow color
-            cv2.circle(tmp_image, center, 5, (200, 255, 255), -1)
+            # cv2.circle(tmp_image, center, 5, (200, 255, 255), -1)
             tmp_image = cv2.cvtColor(tmp_image, cv2.COLOR_RGB2BGR)
             cv2.imshow("Preview", tmp_image)
 
@@ -160,7 +160,7 @@ def network_inference(args):
 class Arguments:
     def __init__(self):
         self.input_params_path = "../train/out/14/best_network_2.pth"
-        self.image_path = "/Users/jowonkim/Desktop/CPG/video/1_experiment1_00000185.mov"
+        self.image_path = "/Users/jowonkim/Desktop/CPG/video/Experiment_set_1/10_experiment1_00000095.mov"
         # self.image_path = "/Users/jowonkim/Desktop/CPG/video/Experiment_set_1"
         # self.image_path = "/Users/jowonkim/Desktop/CPG/gecko_code_with_tutorial/train_and_infer/data_process/video/30-runs-300-gen-distance-only.mp4"
         # self.image_path = "/Users/jowonkim/Desktop/CPG/gecko_code_with_tutorial/train_and_infer/data_process/"

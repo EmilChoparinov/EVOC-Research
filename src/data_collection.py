@@ -67,11 +67,12 @@ def record_elite_generations(run_id: int, generation: int, fitness: float, matri
 
 
 def record_best_fitness_generation_csv(
+        run_id: int,
         robot: ModularRobot,
         fitness: float,
         behavior: simulated_behavior,
         generation_id: int,
-        output_file: str = "best_generations.csv",
+
         alpha: float = 1.0,
         fitness_function: str = "distance",
         similarity_type: str ="DTW"
@@ -88,6 +89,7 @@ def record_best_fitness_generation_csv(
         alpha (float): 混合参数 alpha。
         fitness_function (str): 使用的适应度函数类型。
     """
+    output_file: str = f"best-generations-{run_id}.csv"
     if not os.path.exists(output_file):
         with open(output_file, 'w') as f:
             f.write("generation_id,fitness,alpha,similarity_type,fitness_function,head,middle,rear,right_front,left_front,right_hind,left_hind\n")

@@ -7,9 +7,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 import pandas as pd
 import ast
 import cv2
-
-
-#
+import os
 
 
 
@@ -106,50 +104,74 @@ def calculate_similarity(scale_data: pd.DataFrame,similarity_type) -> pd.DataFra
                 cos = cos_similarity(robot_data, animal_data)
                 print(f"Cosine distance between Robot {robot_index} and animal: {cos}")
                 similarities.append(cos)
+            else:
+                mse = mse_similarity(robot_data, animal_data)
+                dtw = dtw_similarity(robot_data, animal_data)
+                cos = cos_similarity(robot_data, animal_data)
+
+                similarities.append([mse, dtw, cos])
         except ValueError as e:
             print(f"Skipping animal for Robot {robot_index} due to shape mismatch.")
 
     return np.array(similarities)
 
 def combination_fitnesses(distance,df_robot,df_animal,a,similarity_type):
-    '''
-    # For MSE DTW VAE +
-    # For cosine -
-    # distance[0,1] best:1  animal_similarity:[0,1] best:1
-    # fitness[-1:0] best:-1
-    '''
-    # similarity_type = "MSE"
-    print("similarity_type",similarity_type)
+    # print("similarity_type",similarity_type)
     # DTW_similarity
     if  similarity_type == "DTW":
         animal_similarity = calculate_similarity(df_robot,similarity_type)
         animal_similarity=-animal_similarity
         animal_similarity=DTW_fitness_scaling(animal_similarity)
+
+        distance = distance_fitness_scaling(distance)
+        combination = -a * np.array(distance) - (1 - a) * np.array(animal_similarity)
+        print("combined_fitnesses", combination)
+        return combination, distance, animal_similarity
     elif similarity_type=="Cosine":
     # Cosine_similarity
         animal_similarity = calculate_similarity(df_robot,similarity_type)
         animal_similarity=Cosine_fitness_scaling(animal_similarity)
+        distance=distance_fitness_scaling(distance)
+        combination=-a*np.array(distance)+(1-a)*np.array(animal_similarity)
+        print("combined_fitnesses", combination)
+        return combination, distance, animal_similarity
     #MSE
     elif similarity_type=="MSE":
         animal_similarity = calculate_similarity(df_robot,similarity_type)
         animal_similarity=-animal_similarity
         animal_similarity=MSE_fitness_scaling(animal_similarity)
-
+        distance=distance_fitness_scaling(distance)
+        combination=-a*np.array(distance)-(1-a)*np.array(animal_similarity)
+        print("combined_fitnesses",combination)
+        return combination,distance,animal_similarity
     #VAE
     elif similarity_type=="VAE":
         df_robot = infer_on_csv(df_robot)
         animal_similarity=VAE_similarity(df_robot,df_animal)
         animal_similarity = (-1) * np.array(animal_similarity)
         animal_similarity=VAE_fitness_scaling(animal_similarity)
+        distance=distance_fitness_scaling(distance)
+        combination=-a*np.array(distance)-(1-a)*np.array(animal_similarity)
+        print("combined_fitnesses",combination)
+        return combination,distance,animal_similarity
     #
     else:
-        animal_similarity = calculate_similarity(df_robot,similarity_type)
+
+        VAE_robot = infer_on_csv(df_robot)
+        vae_similarity=VAE_similarity(VAE_robot,df_animal)
+
+        # MSE_DTW_Cosine_similarity is a list of [mse, dtw, cos] results
+        MSE_DTW_Cosine_similarity = calculate_similarity(df_robot,similarity_type)
+
+        combined_similarity = [
+            list(mse_dtw_cos) + [vae] for mse_dtw_cos, vae in zip(MSE_DTW_Cosine_similarity, vae_similarity)
+        ]
+        # print("\ncombined_similarity \n", combined_similarity)
+        distance=distance_fitness_scaling(distance)
+        combination=(-1) * np.array(distance)
+        return combination,distance,combined_similarity
 
 
-    distance=distance_fitness_scaling(distance)
-    combination=-a*np.array(distance)-(1-a)*np.array(animal_similarity)
-    print("combined_fitnesses",combination)
-    return combination,distance,animal_similarity
 
 def distance_fitness_scaling(fitnesses):
     # best 1 worst 0
@@ -189,10 +211,11 @@ def DTW_fitness_scaling(fitnesses):
     return scaled_fitness
 
 def Cosine_fitness_scaling(fitnesses):
-    # best 1 worst 0
+    # best 0 worst 2
+    fitnesses=1-np.array(fitnesses)
     scaled_fitness=[]
-    min_f =-1
-    max_f =1
+    min_f =0
+    max_f =2
     if min_f > np.min(fitnesses):
         min_f = np.min(fitnesses)
     if max_f < np.max(fitnesses):
@@ -244,11 +267,13 @@ def MSE_fitness_scaling(fitnesses):
 
 
 
-def create_simulation_video(frame_width=1280, frame_height=960, fps=10):
+def create_simulation_video(run_id: int,alpha,similarity_type,frame_width=1280, frame_height=960, fps=10):
     data_animal_path = "./src/model/slow_interpolated_4.csv"
-    # data_robot_path = 'most-fit-xy-run-1.csv'
-    data_robot_path='best_generations.csv'
-    output_video_path = 'simulation_pair.mp4'
+    data_robot_path=f"best-generations-{run_id}.csv"
+
+    output_dir = f"results-{alpha}-{similarity_type}"
+    # 定义输出视频路径
+    output_video_path = os.path.join(output_dir, f'simulation_{run_id}-{alpha}-{similarity_type}.mp4')
 
     # Read animal and robot data
     data_animal = pd.read_csv(data_animal_path)
@@ -256,7 +281,7 @@ def create_simulation_video(frame_width=1280, frame_height=960, fps=10):
     # visualize the last_generation
     last_generation_id = data_robot['generation_id'].max()
     data_robot=data_robot[data_robot['generation_id'] == last_generation_id]
-    print("\ndata_robot\n",data_robot)
+    # print("\ndata_robot\n",data_robot)
     transformed_df = translate_and_rotate(data_robot)
     scaled_robot_df = scale_robot_coordinates(data_animal, transformed_df)
     data_robot=scaled_robot_df

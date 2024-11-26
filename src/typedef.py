@@ -15,7 +15,7 @@ limbs = Literal['left_arm','left_leg','right_arm','right_leg']
 
 fitness_functions = Literal['distance', 'similarity', 'blended']
 
-similarity_type=Literal["VAE","DTW","MSE","Cosine"]
+similarity_type=Literal["VAE","DTW","MSE","Cosine","four"]
 
 box_points = limbs | Literal[
     'torso', 'tail', 'head'

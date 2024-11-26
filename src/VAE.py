@@ -1,3 +1,4 @@
+from fileinput import filename
 
 import pandas as pd
 import numpy as np
@@ -188,18 +189,20 @@ def vae_loss(recon_x, x, mu, logvar, beta=0.001):
     kl_divergence = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
     return recon_loss + beta * kl_divergence
 
-def plot_fitness(fitnesses_all,distance_all, animal_similarity_all,alpha,similarity_type):
+def plot_fitness(run_id,fitnesses_all,distance_all, animal_similarity_all,alpha,similarity_type):
     max_distances = [np.max(distance) for distance in distance_all]
-    max_similarities = [np.max(similarity) for similarity in animal_similarity_all]
+    if similarity_type == 'Cosine':
+        max_similarities = [np.min(similarity) for similarity in animal_similarity_all]
+    else:
+        max_similarities = [np.max(similarity) for similarity in animal_similarity_all]
     max_fitnesses = [np.min(fitness) for fitness in fitnesses_all]
     print("Max distances:", max_distances)
     print("Max similarities:", max_similarities)
     print("Max fitnesses:", max_fitnesses)
 
-    distance_animalsimilarity(max_distances,max_similarities,alpha,similarity_type)
-    save_to_csv(distance_all, animal_similarity_all,alpha,similarity_type)
-    # average_and_std_plot(distance_all,animal_similarity_all)
-    plot_best_fitnesses(max_fitnesses)
+    # distance_animalsimilarity(max_distances,max_similarities,alpha,similarity_type)
+    # save_to_csv(run_id,distance_all, animal_similarity_all,alpha,similarity_type)
+    # plot_best_fitnesses(max_fitnesses)
     iterations = np.arange(1, len(distance_all) + 1)
 
     fig, axs = plt.subplots(3, 1, figsize=(10, 15))
@@ -238,56 +241,6 @@ def distance_animalsimilarity(distance,animal_similarity,alpha,similarity_type):
     plt.title(f"Alpha={alpha}")
     plt.grid(True)
     plt.show()
-
-
-#
-
-def average_and_std_plot(distance_all, animal_similarity_all):
-
-    means_distance = [np.mean(distance) for distance in distance_all]
-    stds_distance = [np.std(distance) for distance in distance_all]
-    means_similarity = [np.mean(similarity) for similarity in animal_similarity_all]
-    stds_similarity = [np.std(similarity) for similarity in animal_similarity_all]
-
-    plt.figure(figsize=(8, 6))
-
-    for i in range(len(means_distance)):
-        plt.errorbar(means_similarity[i], means_distance[i],
-                     xerr=stds_similarity[i], yerr=stds_distance[i],
-                     fmt='o', label=f'Group {i + 1}')
-
-    plt.xlabel('Animal Similarity (Mean ± Std)')
-    plt.ylabel('Distance (Mean ± Std)')
-    plt.title('Average Distance vs Animal Similarity (Per Group)')
-    plt.grid(True)
-    plt.legend()
-    plt.tight_layout()
-    plt.show()
-
-
-def save_to_csv(distance_all, animal_similarity_all,alpha,similarity_type,filename='distance_and_similarity.csv'):
-    # Ensure both lists have the same length
-    if len(distance_all) != len(animal_similarity_all):
-        raise ValueError("The lengths of distance_all and animal_similarity_all must be the same.")
-
-    # Flatten the lists if they are 2D or nested
-    flattened_distance = [item for sublist in distance_all for item in sublist]
-    flattened_similarity = [item for sublist in animal_similarity_all for item in sublist]
-
-    # Create a DataFrame with the flattened lists
-    df = pd.DataFrame({
-        'Distance': flattened_distance,
-        'Animal Similarity': flattened_similarity,
-        'alpha': alpha,
-        'similarity_type': similarity_type
-    })
-
-    # Save the DataFrame to CSV
-    df.to_csv(filename, index=False)
-    print(f"Data saved to {filename}")
-
-
-
 def plot_best_fitnesses(max_fitnesses):
     running_max = []
     current_max = float('inf')
@@ -317,3 +270,60 @@ def plot_best_fitnesses(max_fitnesses):
     plt.show()
 
 
+
+
+
+
+
+def save_to_csv(run_id, fitnesses_all,distance_all, animal_similarity_all, alpha, similarity_type):
+    output_dir = f"results-{alpha}-{similarity_type}"
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    filename = os.path.join(output_dir, f'distance_and_similarity-{run_id}-{alpha}-{similarity_type}.csv')
+
+    # Flatten the lists if they are 2D or nested
+    flattened_distance = [item for sublist in distance_all for item in sublist]
+    flattened_similarity = [item for sublist in animal_similarity_all for item in sublist]
+
+    # Create a DataFrame with the flattened lists
+    df = pd.DataFrame({
+        'Distance': flattened_distance,
+        'Animal Similarity': flattened_similarity,
+        'alpha': alpha,
+        'similarity_type': similarity_type
+    })
+
+    # Save the DataFrame to CSV
+    df.to_csv(filename, index=False)
+    print(f"Data saved to {filename}")
+
+
+
+
+def average_and_std_plot(max_runs=30, similarity_type_to_plot='DTW'):
+
+    for run_id in range(max_runs):
+        filename = f'distance_and_similarity-{run_id}.csv'
+    df = pd.read_csv(filename)
+    distance_all = df['Distance']
+    animal_similarity_all = df['Animal_Similarity']
+
+    means_distance = [np.mean(distance) for distance in distance_all]
+    stds_distance = [np.std(distance) for distance in distance_all]
+    means_similarity = [np.mean(similarity) for similarity in animal_similarity_all]
+    stds_similarity = [np.std(similarity) for similarity in animal_similarity_all]
+
+    plt.figure(figsize=(8, 6))
+
+    for i in range(len(means_distance)):
+        plt.errorbar(means_similarity[i], means_distance[i],
+                     xerr=stds_similarity[i], yerr=stds_distance[i],
+                     fmt='o', label=f'Group {i + 1}')
+
+    plt.xlabel('Animal Similarity (Mean ± Std)')
+    plt.ylabel('Distance (Mean ± Std)')
+    plt.title('Average Distance vs Animal Similarity (Per Group)')
+    plt.grid(True)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()

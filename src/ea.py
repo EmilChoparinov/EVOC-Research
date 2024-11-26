@@ -10,7 +10,7 @@ import logging
 import math
 import numpy as np
 
-from VAE import plot_fitness,infer_on_csv
+from VAE import plot_fitness,infer_on_csv,save_to_csv
 from typedef import simulated_behavior, genotype
 from data_collection import record_elite_generations,record_best_fitness_generation_csv
 from animal_similarity import create_simulation_video
@@ -53,7 +53,7 @@ from rotation_scaling import get_data_with_forward_center,translation_rotation
 # TODO: This function has been primed to be embarrassingly parallel if more performance required.
 
 # def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt):
-def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt,alpha=config.alpha,fitness_function=config.fitness_functions,similarity_type=config.similarity_type):
+def process_ea_iteration(alpha,fitness_function,similarity_type,max_gen: int, max_runs: int = config.ea_runs_cnt):
 
     alpha = alpha if alpha is not None else config.alpha
 
@@ -63,7 +63,7 @@ def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt,alpha=
     export_ea_metadata(max_runs)
 
     # Stack `max_run` times this function and save output
-    process_ea_iteration(max_gen, max_runs - 1,alpha=config.alpha,fitness_function=config.fitness_functions)
+    process_ea_iteration(alpha,fitness_function,similarity_type,max_gen, max_runs - 1)
     
     setup_logging(file_name=config.generate_log_file(max_runs))
     logging.info("Start CMA-ES Optimization")
@@ -71,7 +71,7 @@ def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt,alpha=
     cma_es = config.generate_cma()
 
     # Read animal data
-    df_animal = pd.read_csv('./src/model/animal_data_head_orgin_884.csv')
+    df_animal = pd.read_csv('./src/model/slow_interpolated_4.csv')
 
     df_animal = infer_on_csv(df_animal)
     distance_all=[]
@@ -112,7 +112,7 @@ def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt,alpha=
             run_id=max_runs, generation=generation_i, fitness=best_fitness, matrix=best_robot.brain._weight_matrix,
             alpha=alpha, fitness_function=fitness_function)
 
-        record_best_fitness_generation_csv(best_robot, best_fitness, best_behavior, generation_id=generation_i, alpha=alpha,
+        record_best_fitness_generation_csv(max_runs,best_robot, best_fitness, best_behavior, generation_id=generation_i, alpha=alpha,
             fitness_function=fitness_function,similarity_type=similarity_type)
 
         # top 3 fitness and corresponding robots and weight matrices
@@ -136,9 +136,9 @@ def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt,alpha=
         except Exception as e:
             logging.error(f"Error while writing to CSV: {e}")
             raise
-    plot_fitness(fitnesses_all,distance_all, animal_similarities_all,alpha,similarity_type)
+    save_to_csv(max_runs,fitnesses_all,distance_all, animal_similarities_all,alpha,similarity_type)
 
-    create_simulation_video()
+    create_simulation_video(max_runs,alpha,similarity_type)
     # Do not need to flush the buffer at this step because it's always the
     # last thing the loop does.
     logging.info(f"EA Iteration {max_runs} complete")

@@ -1,4 +1,5 @@
 import ea
+import VAE
 import config
 import argparse
 import glob
@@ -14,7 +15,7 @@ parser.add_argument("--runs", type=int, default=config.ea_runs_cnt, help="Times 
 parser.add_argument("--gens", type=int, default=config.ea_generations_cnt, help="How many generations per run")
 parser.add_argument("--alpha", type=float, default=config.alpha, help="Alpha value between 0 and 1.")
 parser.add_argument("--with-fit", type=str, default=config.use_fit,choices=["distance", "similarity", "blended"], help="Specify the fitness function for EA.")
-parser.add_argument("--similarity_type", type=str, default=config.type,choices=["DTW", "MSE", "Cosine","VAE"], help="Specify the type of similarity function.")
+parser.add_argument("--similarity_type", type=str, default=config.type,choices=["DTW", "MSE", "Cosine","VAE","four"], help="Specify the type of similarity function.")
 
 # no initial value, each time must ensure alpha and fitness_function
 
@@ -37,13 +38,14 @@ def main():
     # Pass the arguments to ea.process_ea_iteration
     ea.export_ea_metadata()
     ea.process_ea_iteration(
-        max_gen=args.gens,
-        max_runs=args.runs,
         alpha=args.alpha,
         fitness_function=args.with_fit,
         similarity_type=args.similarity_type,
-    )
+        max_gen=args.gens,
+        max_runs=args.runs,
 
+    )
+    # VAE.average_and_std_plot(max_runs=args.runs,similarity_type=args.similarity_type)
 if __name__ == '__main__':
     if not args.skip:
         main()

@@ -241,6 +241,8 @@ def distance_animalsimilarity(distance,animal_similarity,alpha,similarity_type):
     plt.title(f"Alpha={alpha}")
     plt.grid(True)
     plt.show()
+
+
 def plot_best_fitnesses(max_fitnesses):
     running_max = []
     current_max = float('inf')

@@ -69,7 +69,7 @@ def calculate_similarity(scale_data: pd.DataFrame,similarity_type) -> pd.DataFra
 
     # read animal dataset
     # animal_data = pd.read_csv('./src/model/animal_data_head_orgin_884.csv').reset_index(drop=True)
-    animal_data = pd.read_csv('./src/model/slow_interpolated_4.csv').reset_index(drop=True)
+    animal_data = pd.read_csv('./src/model/slow_with_linear_4.csv').reset_index(drop=True)
     # animal_data = pd.read_csv('./src/model/CubicSpline_interpolated_3.csv').reset_index(drop=True)
     animal_data = parse_and_split_coordinates(animal_data, coordinate_columns)
 
@@ -132,7 +132,7 @@ def combination_fitnesses(distance,df_robot,df_animal,a,similarity_type):
         animal_similarity = calculate_similarity(df_robot,similarity_type)
         animal_similarity=Cosine_fitness_scaling(animal_similarity)
         distance=distance_fitness_scaling(distance)
-        combination=-a*np.array(distance)+(1-a)*np.array(animal_similarity)
+        combination=-a*np.array(distance)-(1-a)*np.array(animal_similarity)
         print("combined_fitnesses", combination)
         return combination, distance, animal_similarity
     #MSE
@@ -156,19 +156,31 @@ def combination_fitnesses(distance,df_robot,df_animal,a,similarity_type):
         return combination,distance,animal_similarity
     #
     else:
-
+        # VAE
         VAE_robot = infer_on_csv(df_robot)
-        vae_similarity=VAE_similarity(VAE_robot,df_animal)
+        vae_similarity = VAE_similarity(VAE_robot, df_animal)
+        vae_similarity = (-1) * np.array(vae_similarity)
+        vae_similarity = VAE_fitness_scaling(vae_similarity)
 
-        # MSE_DTW_Cosine_similarity is a list of [mse, dtw, cos] results
-        MSE_DTW_Cosine_similarity = calculate_similarity(df_robot,similarity_type)
+        # 计算 MSE, DTW, Cosine 相似度并进行 scaling
+        MSE_DTW_Cosine_similarity = calculate_similarity(df_robot, similarity_type)
 
+        # 对每种相似度进行 scaling
+        mse_similarity = MSE_fitness_scaling([-similarity[0] for similarity in MSE_DTW_Cosine_similarity])
+        dtw_similarity = DTW_fitness_scaling([-similarity[1] for similarity in MSE_DTW_Cosine_similarity])
+        cosine_similarity = Cosine_fitness_scaling([similarity[2] for similarity in MSE_DTW_Cosine_similarity])
+
+        # 合并所有相似度值
         combined_similarity = [
-            list(mse_dtw_cos) + [vae] for mse_dtw_cos, vae in zip(MSE_DTW_Cosine_similarity, vae_similarity)
+            list(mse_dtw_cos) + [vae] for mse_dtw_cos, vae in zip(
+                zip(mse_similarity, dtw_similarity, cosine_similarity), vae_similarity
+            )
         ]
-        # print("\ncombined_similarity \n", combined_similarity)
-        distance=distance_fitness_scaling(distance)
-        combination=(-1) * np.array(distance)
+
+        # 计算距离并进行 scaling
+        distance = distance_fitness_scaling(distance)
+
+        combination = (-1) * np.array(distance)
         return combination,distance,combined_similarity
 
 
@@ -212,10 +224,10 @@ def DTW_fitness_scaling(fitnesses):
 
 def Cosine_fitness_scaling(fitnesses):
     # best 0 worst 2
-    fitnesses=1-np.array(fitnesses)
+    fitnesses=-(1-np.array(fitnesses))
     scaled_fitness=[]
-    min_f =0
-    max_f =2
+    min_f =-2
+    max_f =0
     if min_f > np.min(fitnesses):
         min_f = np.min(fitnesses)
     if max_f < np.max(fitnesses):
@@ -268,7 +280,7 @@ def MSE_fitness_scaling(fitnesses):
 
 
 def create_simulation_video(run_id: int,alpha,similarity_type,frame_width=1280, frame_height=960, fps=10):
-    data_animal_path = "./src/model/slow_interpolated_4.csv"
+    data_animal_path = "./src/model/slow_with_linear_4.csv"
     data_robot_path=f"best-generations-{run_id}.csv"
 
     output_dir = f"results-{alpha}-{similarity_type}"

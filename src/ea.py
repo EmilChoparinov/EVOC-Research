@@ -71,7 +71,7 @@ def process_ea_iteration(alpha,fitness_function,similarity_type,max_gen: int, ma
     cma_es = config.generate_cma()
 
     # Read animal data
-    df_animal = pd.read_csv('./src/model/slow_interpolated_4.csv')
+    df_animal = pd.read_csv('./src/model/slow_with_linear_4.csv')
 
     df_animal = infer_on_csv(df_animal)
     distance_all=[]

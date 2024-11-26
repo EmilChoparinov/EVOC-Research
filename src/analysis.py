@@ -41,6 +41,7 @@ def average_and_std_plot(similarity_type_to_plot='DTW'):
         # 读取每个文件的数据
         for file in csv_files:
             df = pd.read_csv(file)
+            df = df.tail(10)
             all_distances.extend(df['Distance'].values)
             all_similarities.extend(df['Animal Similarity'].values)
 
@@ -62,6 +63,7 @@ def average_and_std_plot(similarity_type_to_plot='DTW'):
     plt.legend()
     plt.tight_layout()
     plt.show()
+
 if __name__ == "__main__":
     # 使用 argparse 获取命令行参数
     parser = argparse.ArgumentParser(description="Plot Average Distance vs Animal Similarity.")

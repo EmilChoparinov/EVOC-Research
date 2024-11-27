@@ -18,13 +18,13 @@ python3 label.py dataset/
 Specifying `outdir` is optional. The default is dataset but for clarity is was
 added.
 
-## Discard Rules
-In the event you recieve an image such that the robot is only partially 
-visible, you may press `d` to discard this one and get a new image to label. We
-want to label images only where all limbs of the robot are visible or inferrable. If the position to you is not inferrable, you may skip it.
+## Scripts
+`to_dataset.py` is a video processor that creates a standardized image set 
+chronologically ordered by a frame id across N videos.
 
-Example:
-![](./example_discard.png)
+`label.py` is a labeling GUI that has you place dots on the robots body and
+generates two outgoing folders: The `marked-dataset` for users to double check their labeling and `labeled-dataset` that contains JSON's to be fed into Yihongs
+DREAM code to train the detection model.
 
 ## How to Label
 When starting `label.py`, it will open a second window containing a cheatsheet
@@ -33,6 +33,15 @@ of each command available to you.
 This is that cheatsheet:
 
 ![](./usage.png)
+
+## Discard Rules
+In the event you recieve an image such that the robot is only partially 
+visible, you may press `d` to discard this one and get a new image to label. We
+want to label images only where all limbs of the robot are visible or inferrable. If the position to you is not inferrable, you may skip it.
+
+Example:
+![](./example_discard.png)
+
 
 ## Help
 `to_dataset.py`:

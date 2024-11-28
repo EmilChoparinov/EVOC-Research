@@ -41,7 +41,7 @@ from revolve2.modular_robot import ModularRobot, ModularRobotControlInterface
 from revolve2.modular_robot_physical import Config, UUIDKey
 from revolve2.modular_robot_physical.remote import run_remote
 
-from src.network_layer import remote_control_with_polling_rate
+from experiment.revolve_layer import remote_control_with_polling_rate
 from src.config import PhysMap, cameras
 
 import numpy as np
@@ -50,7 +50,8 @@ import threading
 from pprint import pprint
 import math
 import time
-
+from experiment.communication_layer import boot_sockets, Command, Payload, Event, Message
+import experiment.config as config
 
 # These CPG params are ordered from the 30-runs-300-gen-distance-only.zip file
 batch_cpg_params = [
@@ -138,6 +139,10 @@ brains = [
     for cpg in batch_cpg_params
 ]
 
+# Entrypoint for communication between recorder
+sio, commands, emit = boot_sockets()
+sio.connect(config.recorder_ip)
+
 @dataclass
 class BatchTesterBrain(Brain):
     def make_instance(self) -> BrainInstance:
@@ -153,6 +158,8 @@ class BatchTesterBrainInstance(BrainInstance):
     # Time since 0 (when run starts)
     dt0: float = 0
     idx: int = 0
+
+    play_cpg: bool = True
     
     # We pause the robots movements between experiments
     capture_dt: bool = True
@@ -160,43 +167,89 @@ class BatchTesterBrainInstance(BrainInstance):
     # Yup, blame netcode not me
     spam_times: int = 20
 
+    def reset_state(self):
+        self.spam_times = 20
+        self.dt0 = 0
+        self.capture_dt = False
+        self.play_cpg = True
+
     def control(
         self, 
         dt: float, 
         sensor_state: ModularRobotSensorState, 
         control_interface: ModularRobotControlInterface
     ) -> None:
+        # Due to how... slow the robot is within the network. We check if a 
+        # message exists in the buffer and only perform the last one. We flush
+        # the rest. As such we make some assumptions about the restart command
+        if len(commands) != 0:
+            cmd = commands.pop()
+            commands.clear()
+            match cmd.type:
+                case "pause": self.play_cpg = False
+                case "play": self.play_cpg = True
+
+                case "restart":
+                    # Clear the internal states of the CPG by constructing it
+                    # again from scratch
+                    self.brains[self.idx] = BrainCpgNetworkStatic.uniform_from_params(
+                        params=batch_cpg_params[self.idx],
+                        cpg_network_structure=cpg_net_struct,
+                        initial_state_uniform=math.sqrt(2) * 0.5,
+                        output_mapping=output_map
+                    )
+                    self.reset_state()
+
+        # Do nothing until the command is recieved!!
+        if not self.play_cpg: return
+
         if self.spam_times > 0:
             [control_interface.set_active_hinge_target(h, 0) for h in self.hinges]
             self.spam_times -= 1
             return
-        
+
+        # If in capturing mode, increment the time consumed
         if self.capture_dt:
             self.dt0 += dt
-        else:
+        
+        # If not in capturing mode. This means we are done with this CPG.
+        # Enter capturing mode again and load a new CPG
+        if not self.capture_dt:
             self.capture_dt = True
             input(f"Loaded CPG Index: {self.idx}. Press enter to start test next test")
+            # A new CPG loading requires the following event chain.
+            # Create new experiment video -> play video
+            emit(
+                Message(
+                    [
+                        Command(Event.new_experiment, Payload(self.idx)), 
+                        Command(Event.play)]))
+            self.play_cpg = True
+            print("Booting...")
+            # We give 2 seconds to the communication layer to do its recording
+            time.sleep(2)
+            print("Evaluation starting")
 
         # After 30 seconds, we progress to the next CPG
-        if(self.dt0 > 5):
+        if(self.dt0 > 30):
             self.idx += 1
+            
+            # Tell recorder to pause the recording now
+            emit(Message([Command(Event.pause)]))
+
             # If idx reached the end, quit
             if(self.idx == len(self.brains)):
                 print("Test complete. Shutting down")
                 exit()
             print("Loading next...")
             
-            # Reset dt states
-            self.spam_times = 20
-            self.dt0 = 0
-            self.capture_dt = False
+            self.reset_state()
             return
 
         self.brains[self.idx].control(dt, sensor_state, control_interface)
 
 robot = ModularRobot(body=body,
-                     brain=BatchTesterBrain()
-)
+                     brain=BatchTesterBrain())
 
 def on_prepared() -> None:
     print("Robot is ready. Press enter to start")
@@ -220,14 +273,10 @@ config = Config(
     inverse_servos={v["pin"]: v["is_inverse"] for k,v in pmap.items()},
 )
 
-# t = threading.Thread(target=record_process)
-
 print("Initializing robot..")
-# t.start()
 remote_control_with_polling_rate(
     config=config,
     port=20812,
     hostname="10.15.3.59",
     rate=10
 )
-# t.join()

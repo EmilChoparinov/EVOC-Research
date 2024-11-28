@@ -38,8 +38,8 @@ from revolve2.modular_robot import ModularRobot, ModularRobotControlInterface
 from revolve2.modular_robot_physical import Config, UUIDKey
 from revolve2.modular_robot_physical.remote import run_remote
 
-from src.network_layer import remote_control_with_polling_rate
-from src.config import PhysMap
+from experiment.revolve_layer import remote_control_with_polling_rate
+from simulate.config import PhysMap
 
 import numpy as np
 

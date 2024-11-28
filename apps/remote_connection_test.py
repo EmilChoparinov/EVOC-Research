@@ -29,7 +29,7 @@ from revolve2.modular_robot_physical.remote import run_remote
 
 from revolve2.standards.modular_robots_v2 import gecko_v2
 
-from src.network_layer import remote_control_with_polling_rate
+from experiment.revolve_layer import remote_control_with_polling_rate
 
 from math import cos
 

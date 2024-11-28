@@ -59,7 +59,6 @@ parser.add_argument(
          "[filename].json"
 )
 
-args: Args = parser.parse_args()
 
 #=== Program Begin
 print(
@@ -120,7 +119,7 @@ class MutableVector2():
     """Pointer wrapper for a vector2 tuple type"""
     v: Vector2
 
-
+args: Args = parser.parse_args()
 
 #=== Event Handlers. One for mouse capture the other for keyboard capture
 def on_mousemove(record_out: MutableVector2):
@@ -167,7 +166,6 @@ def save_json(record: SampleLabels, file: str, img: cv2.UMat):
     # The layer also required a direct copy to be made of the image. So we will 
     # copy directly from the `indir` into `outdir`
     cv2.imwrite(os.path.join(args.outdir, file), img)
-
 
 #=== Image Processor
 def label_image(file: str) -> None:

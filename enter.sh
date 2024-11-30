@@ -8,8 +8,6 @@ else
     echo "===== Creating a new virtual environment ====="
     python3 -m venv .venv
     source .venv/bin/activate
-    pip install --upgrade setuptools
-    pip install -r requirements.txt
     echo "===== Made $PWD/.venv/bin/activate ====="
     echo "===== INSTALLING \`.mulitneat-detached\` ====="
     cd .multineat-detached
@@ -19,5 +17,6 @@ else
     cd .revolve2-detached
     sh student_install.sh
     cd ..
+    pip install -r requirements.txt
     echo "All done! You can now use `source enter.sh` to enter without re-installation."
 fi

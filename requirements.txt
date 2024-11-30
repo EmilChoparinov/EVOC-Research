@@ -1,0 +1,3 @@
+socketio
+torch
+fastdtw

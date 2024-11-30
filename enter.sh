@@ -8,6 +8,8 @@ else
     echo "===== Creating a new virtual environment ====="
     python3 -m venv .venv
     source .venv/bin/activate
+    pip install --upgrade setuptools
+    pip install -r requirements.txt
     echo "===== Made $PWD/.venv/bin/activate ====="
     echo "===== INSTALLING \`.mulitneat-detached\` ====="
     cd .multineat-detached

@@ -1,4 +1,5 @@
 from VAE import VAE_similarity,infer_on_csv
+import logging
 import numpy as np
 from sklearn.metrics import mean_squared_error
 from fastdtw import fastdtw
@@ -8,6 +9,7 @@ import pandas as pd
 import ast
 import cv2
 import os
+import config
 
 
 
@@ -63,14 +65,16 @@ def cos_similarity(robot_data: pd.DataFrame, animal_data: pd.DataFrame) -> float
     else:
         raise ValueError("Shape mismatch between robot and animal data, cannot calculate COSINE.")
 
-def calculate_similarity(scale_data: pd.DataFrame,similarity_type) -> pd.DataFrame:
+def calculate_similarity(scale_data: pd.DataFrame, state: config.EAState) -> pd.DataFrame:
+    similarity_type = state.similarity_type
 
     coordinate_columns = ['middle', 'rear', 'left_hind', 'left_front', 'head', 'right_hind', 'right_front']
 
     # read animal dataset
     # animal_data = pd.read_csv('./src/model/animal_data_head_orgin_884.csv').reset_index(drop=True)
-    animal_data = pd.read_csv('./src/model/slow_with_linear_4.csv').reset_index(drop=True)
+    # animal_data = pd.read_csv('./src/model/slow_with_linear_4.csv').reset_index(drop=True)
     # animal_data = pd.read_csv('./src/model/CubicSpline_interpolated_3.csv').reset_index(drop=True)
+    animal_data = state.animal_data.copy()
     animal_data = parse_and_split_coordinates(animal_data, coordinate_columns)
 
     similarities = []
@@ -94,15 +98,15 @@ def calculate_similarity(scale_data: pd.DataFrame,similarity_type) -> pd.DataFra
         try:
             if similarity_type == "MSE":
                 mse = mse_similarity(robot_data, animal_data)
-                print(f"MSE between Robot {robot_index} and animal: {mse}")
+                logging.debug(f"MSE between Robot {robot_index} and animal: {mse}")
                 similarities.append(mse)
             elif similarity_type == "DTW":
                 dtw = dtw_similarity(robot_data, animal_data)
-                print(f"DTW distance between Robot {robot_index} and animal: {dtw}")
+                logging.debug(f"DTW distance between Robot {robot_index} and animal: {dtw}")
                 similarities.append(dtw)
             elif similarity_type == "Cosine":
                 cos = cos_similarity(robot_data, animal_data)
-                print(f"Cosine distance between Robot {robot_index} and animal: {cos}")
+                logging.debug(f"Cosine distance between Robot {robot_index} and animal: {cos}")
                 similarities.append(cos)
             else:
                 mse = mse_similarity(robot_data, animal_data)
@@ -111,38 +115,41 @@ def calculate_similarity(scale_data: pd.DataFrame,similarity_type) -> pd.DataFra
 
                 similarities.append([mse, dtw, cos])
         except ValueError as e:
-            print(f"Skipping animal for Robot {robot_index} due to shape mismatch.")
+            logging.error(
+                f"Skipping animal for Robot {robot_index} due to shape mismatch.")
 
     return np.array(similarities)
 
-def combination_fitnesses(distance,df_robot,df_animal,a,similarity_type):
-    # print("similarity_type",similarity_type)
-    # DTW_similarity
+def combination_fitnesses(distance, df_robot, state: config.EAState):
+    df_animal = state.animal_data
+    a = state.alpha
+    similarity_type = state.similarity_type
+    
     if  similarity_type == "DTW":
-        animal_similarity = calculate_similarity(df_robot,similarity_type)
+        animal_similarity = calculate_similarity(df_robot, state)
         animal_similarity=-animal_similarity
         animal_similarity=DTW_fitness_scaling(animal_similarity)
 
         distance = distance_fitness_scaling(distance)
         combination = -a * np.array(distance) - (1 - a) * np.array(animal_similarity)
-        print("combined_fitnesses", combination)
+        logging.debug("combined_fitnesses", combination)
         return combination, distance, animal_similarity
     elif similarity_type=="Cosine":
     # Cosine_similarity
-        animal_similarity = calculate_similarity(df_robot,similarity_type)
+        animal_similarity = calculate_similarity(df_robot,state)
         animal_similarity=Cosine_fitness_scaling(animal_similarity)
         distance=distance_fitness_scaling(distance)
         combination=-a*np.array(distance)-(1-a)*np.array(animal_similarity)
-        print("combined_fitnesses", combination)
+        logging.debug("combined_fitnesses", combination)
         return combination, distance, animal_similarity
     #MSE
     elif similarity_type=="MSE":
-        animal_similarity = calculate_similarity(df_robot,similarity_type)
+        animal_similarity = calculate_similarity(df_robot,state)
         animal_similarity=-animal_similarity
         animal_similarity=MSE_fitness_scaling(animal_similarity)
         distance=distance_fitness_scaling(distance)
         combination=-a*np.array(distance)-(1-a)*np.array(animal_similarity)
-        print("combined_fitnesses",combination)
+        logging.debug("combined_fitnesses",combination)
         return combination,distance,animal_similarity
     #VAE
     elif similarity_type=="VAE":
@@ -152,7 +159,7 @@ def combination_fitnesses(distance,df_robot,df_animal,a,similarity_type):
         animal_similarity=VAE_fitness_scaling(animal_similarity)
         distance=distance_fitness_scaling(distance)
         combination=-a*np.array(distance)-(1-a)*np.array(animal_similarity)
-        print("combined_fitnesses",combination)
+        logging.debug("combined_fitnesses",combination)
         return combination,distance,animal_similarity
     #
     else:
@@ -163,7 +170,7 @@ def combination_fitnesses(distance,df_robot,df_animal,a,similarity_type):
         vae_similarity = VAE_fitness_scaling(vae_similarity)
 
         # 计算 MSE, DTW, Cosine 相似度并进行 scaling
-        MSE_DTW_Cosine_similarity = calculate_similarity(df_robot, similarity_type)
+        MSE_DTW_Cosine_similarity = calculate_similarity(df_robot, state)
 
         # 对每种相似度进行 scaling
         mse_similarity = MSE_fitness_scaling([-similarity[0] for similarity in MSE_DTW_Cosine_similarity])
@@ -199,8 +206,8 @@ def distance_fitness_scaling(fitnesses):
             scaled_fitness.append(0)
         else:
             scaled_fitness.append((i - min_f) / (max_f - min_f))
-    print('Distance_fitnesses',fitnesses)
-    print('Distance_scaled_fitnesses',scaled_fitness)
+    logging.debug('Distance_fitnesses',fitnesses)
+    logging.debug('Distance_scaled_fitnesses',scaled_fitness)
     return scaled_fitness
 
 
@@ -218,8 +225,8 @@ def DTW_fitness_scaling(fitnesses):
             scaled_fitness.append(0)
         else:
             scaled_fitness.append((i - min_f) / (max_f - min_f))
-    print('DTW_fitnesses',fitnesses)
-    print('DTW_scaled_fitnesses',scaled_fitness)
+    logging.debug('DTW_fitnesses',fitnesses)
+    logging.debug('DTW_scaled_fitnesses',scaled_fitness)
     return scaled_fitness
 
 def Cosine_fitness_scaling(fitnesses):
@@ -234,8 +241,8 @@ def Cosine_fitness_scaling(fitnesses):
         max_f = np.max(fitnesses)
     for i in fitnesses:
         scaled_fitness.append((i - min_f) / (max_f - min_f))
-    print('Cosine_fitnesses',fitnesses)
-    print('Cosine_scaled_fitnesses',scaled_fitness)
+    logging.debug('Cosine_fitnesses',fitnesses)
+    logging.debug('Cosine_scaled_fitnesses',scaled_fitness)
     return scaled_fitness
 
 
@@ -250,8 +257,8 @@ def VAE_fitness_scaling(fitnesses):
         max_f = np.max(fitnesses)
     for i in fitnesses:
         scaled_fitness.append((i - min_f) / (max_f - min_f))
-    print('VAE_fitnesses',fitnesses)
-    print('VAE_scaled_fitnesses',scaled_fitness)
+    logging.debug('VAE_fitnesses',fitnesses)
+    logging.debug('VAE_scaled_fitnesses',scaled_fitness)
     return scaled_fitness
 
 
@@ -269,8 +276,8 @@ def MSE_fitness_scaling(fitnesses):
             scaled_fitness.append(0)
         else:
             scaled_fitness.append((i - min_f) / (max_f - min_f))
-    print('MSE_fitnesses',fitnesses)
-    print('MSE_scaled_fitnesses',scaled_fitness)
+    logging.debug('MSE_fitnesses',fitnesses)
+    logging.debug('MSE_scaled_fitnesses',scaled_fitness)
     return scaled_fitness
 
 
@@ -279,8 +286,11 @@ def MSE_fitness_scaling(fitnesses):
 
 
 
-def create_simulation_video(run_id: int,alpha,similarity_type,frame_width=1280, frame_height=960, fps=10):
-    data_animal_path = "./src/model/slow_with_linear_4.csv"
+def create_simulation_video(state: config.EAState,frame_width=1280, frame_height=960, fps=10):
+    run_id = state.max_runs
+    alpha = state.alpha
+    similarity_type = state.similarity_type
+
     data_robot_path=f"best-generations-{run_id}.csv"
 
     output_dir = f"results-{alpha}-{similarity_type}"
@@ -288,7 +298,7 @@ def create_simulation_video(run_id: int,alpha,similarity_type,frame_width=1280, 
     output_video_path = os.path.join(output_dir, f'simulation_{run_id}-{alpha}-{similarity_type}.mp4')
 
     # Read animal and robot data
-    data_animal = pd.read_csv(data_animal_path)
+    data_animal = state.animal_data.copy()
     data_robot = pd.read_csv(data_robot_path)
     # visualize the last_generation
     last_generation_id = data_robot['generation_id'].max()
@@ -338,7 +348,7 @@ def create_simulation_video(run_id: int,alpha,similarity_type,frame_width=1280, 
                         robot_points[column] = (x, y)  # Save the coordinates for connecting lines
                         cv2.circle(img, (x, y), 3, robot_color, -1)  # Robot points
                     except:
-                        print(f"Error parsing coordinates for {column} in row {i} of robot data")
+                        logging.error(f"Error parsing coordinates for {column} in row {i} of robot data")
 
         robot_connections = [('head', 'left_front'), ('head', 'middle'),('middle','rear'),('head', 'right_front'), ('rear', 'right_hind'), ('rear', 'left_hind')]  # Define connections
         for point1, point2 in robot_connections:
@@ -357,7 +367,7 @@ def create_simulation_video(run_id: int,alpha,similarity_type,frame_width=1280, 
                         animal_points[column] = (x, y)
                         cv2.circle(img, (x, y), 3, animal_color, -1)  # Animal points
                     except:
-                        print(f"Error parsing coordinates for {column} in row {i} of animal data")
+                        logging.error(f"Error parsing coordinates for {column} in row {i} of animal data")
 
         # Connect animal points with lines
         animal_connections = [('head', 'left_front'),('head', 'middle'),('middle','rear'), ('head', 'right_front'), ('rear', 'right_hind'), ('rear', 'left_hind')]  # Define connections
@@ -382,7 +392,7 @@ def parse_tuple(value):
         # 尝试将字符串解析为数值元组
         return np.array(ast.literal_eval(value)) if isinstance(value, str) else np.array(value)
     except (ValueError, SyntaxError):
-        print(f"Error parsing value: {value}")
+        logging.error(f"Error parsing value: {value}")
         return np.array([np.nan, np.nan])
 
 
@@ -416,7 +426,7 @@ def calculate_and_add_center(df):
                 if isinstance(point, (tuple, list, np.ndarray)) and not np.isnan(point).any():
                     points.append(np.array(point))
             except Exception as e:
-                print(f"Error parsing {key}: {e}")
+                logging.error(f"Error parsing {key}: {e}")
 
         # 如果找到有效的关键点，计算它们的平均值
         if points:
@@ -435,7 +445,7 @@ def translate_and_rotate(df):
     required_columns = ['head']
     missing_columns = [col for col in required_columns if col not in df.columns]
     if missing_columns:
-        print(f"Missing columns: {', '.join(missing_columns)}. Skipping file.")
+        logging.warning(f"Missing columns: {', '.join(missing_columns)}. Skipping file.")
         return None  # Skip if any required columns are missing
 
     # Parse 'center-euclidian' and 'head' as tuples
@@ -443,7 +453,7 @@ def translate_and_rotate(df):
     head_str = parse_tuple(df['head'].iloc[0])
     # 检查中心点和头部点是否有效
     if not isinstance(center_str, (tuple, list, np.ndarray)) or not isinstance(head_str, (tuple, list, np.ndarray)):
-        print(f"Invalid format for center or head in first frame: center={center_str}, head={head_str}")
+        logging.warning(f"Invalid format for center or head in first frame: center={center_str}, head={head_str}")
         return None
     # Convert head and center points to np.array if they are not
     center_str = np.array(center_str)
@@ -458,7 +468,7 @@ def translate_and_rotate(df):
         center_x, center_y = center_str
         forward_x, forward_y = forward_str
     except ValueError:
-        print(f"Error parsing center or forward in the first frame: {center_str}, {forward_str}")
+        logging.error(f"Error parsing center or forward in the first frame: {center_str}, {forward_str}")
         return None
 
     theta = (np.pi / 2) - np.arctan2(forward_y, forward_x)
@@ -490,7 +500,7 @@ def translate_and_rotate(df):
         for point_name, point_value in points_to_transform.items():
             try:
                 if np.isnan(point_value).any():
-                    print(f"Skipping {point_name} due to missing value.")
+                    logging.warning(f"Skipping {point_name} due to missing value.")
                     continue
 
                 translated_point = point_value - head_str
@@ -498,7 +508,7 @@ def translate_and_rotate(df):
                 transformed_points[point_name] = f"({rotated_point[0]:.2f}, {rotated_point[1]:.2f})"
 
             except Exception as e:
-                print(f"Error parsing {point_name} with value {point_value}: {e}")
+                logging.error(f"Error parsing {point_name} with value {point_value}: {e}")
 
         transformed_data.append(transformed_points)
 
@@ -539,7 +549,7 @@ def scale_robot_coordinates(df_animal, df_robot):
     for i, frame in df_animal.iterrows():
         animal_head = parse_tuple_string(frame['head'])
         if animal_head is None:
-            print(f"Frame {i}: Missing animal head coordinates.")
+            logging.warning(f"Frame {i}: Missing animal head coordinates.")
             continue
 
         # 提取所有关键点并计算到 head 的距离
@@ -548,7 +558,7 @@ def scale_robot_coordinates(df_animal, df_robot):
             ['middle', 'rear', 'left_front', 'left_hind', 'right_hind', 'right_front']
         ]
         if None in animal_coordinates:
-            print(f"Frame {i}: Missing some animal keypoints, skipping.")
+            logging.warning(f"Frame {i}: Missing some animal keypoints, skipping.")
             continue
 
         distances = np.linalg.norm(np.array(animal_coordinates) - np.array(animal_head), axis=1)
@@ -570,7 +580,7 @@ def scale_robot_coordinates(df_animal, df_robot):
     # 缩放机器人的数据
     scaled_robot_data = []
     first_robot_head = np.array(coordinates_2_list[0]['head'])
-    print("first_robot_head",first_robot_head)
+    logging.debug("first_robot_head",first_robot_head)
     for i in range(len(coordinates_2_list)):
         robot_coordinates = list(coordinates_2_list[i].values())
         scaled_robot_coordinates = (np.array(robot_coordinates) - first_robot_head) * scaling_factor + first_robot_head

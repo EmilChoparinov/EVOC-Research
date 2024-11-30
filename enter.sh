@@ -17,5 +17,6 @@ else
     cd .revolve2-detached
     sh student_install.sh
     cd ..
+    pip install -r requirements.txt
     echo "All done! You can now use `source enter.sh` to enter without re-installation."
 fi

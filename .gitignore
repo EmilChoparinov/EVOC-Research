@@ -8,6 +8,7 @@ out/
 *.zip
 *log
 *.txt
+!requirements.txt
 *.pth
 *.mp4
 

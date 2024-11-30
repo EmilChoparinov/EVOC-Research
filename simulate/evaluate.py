@@ -2,7 +2,7 @@ from revolve2.modular_robot import ModularRobot
 from revolve2.modular_robot_simulation import ModularRobotSimulationState
 from animal_similarity import combination_fitnesses
 from rotation_scaling import size_scaling, translation_rotation, get_data_with_forward_center
-from config import alpha
+import config
 
 import numpy as np
 import numpy.typing as npt
@@ -11,19 +11,22 @@ from typedef import population, simulated_behavior, genotype
 def get_pose_x_delta(state0: ModularRobotSimulationState, stateN: ModularRobotSimulationState) -> float:
     """
     Calculate the different between the starting position and the final position
-
+ 
     Note: Its subtracting to produce a negative value because the robot just
           happend to spawn oriented towards the -x direction
     """
     return state0.get_pose().position.x - stateN.get_pose().position.x
 
 
-def evaluate(robots: list[ModularRobot], behaviors: list[simulated_behavior],df_animal,alpha,similarity_type) -> npt.NDArray[
+def evaluate(robots: list[ModularRobot], behaviors: list[simulated_behavior], state: config.EAState) -> npt.NDArray[
     np.float_]:
     """
     Perform combined evaluation over a list of robots.
     Returns an array of ordered fitness values based on the combination of distance and similarity.
     """
+    df_animal = state.animal_data
+    alpha = state.alpha
+    similarity_type = state.similarity_type
     # Distance-based fitness
     distance_scores = np.array([
         get_pose_x_delta(
@@ -34,7 +37,7 @@ def evaluate(robots: list[ModularRobot], behaviors: list[simulated_behavior],df_
     # print("df_animal",df_animal)
     df_robot = size_scaling(translation_rotation(get_data_with_forward_center(robots, behaviors)))
     # Combination_fitnesses to get combined fitness, distance, and similarity
-    combined_fitness, distance, animal_similarity= combination_fitnesses(distance_scores, df_robot,df_animal, alpha,similarity_type)
+    combined_fitness, distance, animal_similarity= combination_fitnesses(distance_scores, df_robot, state)
 
     return combined_fitness,distance,animal_similarity
 

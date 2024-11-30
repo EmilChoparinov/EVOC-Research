@@ -1,5 +1,6 @@
 from fileinput import filename
 
+import logging
 import pandas as pd
 import numpy as np
 import torch
@@ -35,52 +36,9 @@ def VAE_similarity(df_robot: pd.DataFrame, df_animal: pd.DataFrame) -> list:
         avg_distance = distances.mean()
         similarities.append(avg_distance)
 
-    print('VAE_similarity',similarities)
+    logging.info('VAE_similarity',similarities)
     return similarities
 
-
-def infer_on_csv(df: pd.DataFrame) -> pd.DataFrame:
-    scale_data = df.copy()
-
-    for column in ['head', 'middle', 'rear', 'left_front', 'right_front', 'left_hind', 'right_hind']:
-        scale_data[column] = scale_data[column].apply(parse_tuple_string)
-
-    coordinates_robot_list = []
-    robot_indices = []
-    for index, frame in scale_data.iterrows():
-        coordinates_2 = {
-            'head': frame.get('head'),
-            'middle': frame.get('middle'),
-            'rear': frame.get('rear'),
-            'left_front': frame.get('left_front'),
-            'right_front': frame.get('right_front'),
-            'left_hind': frame.get('left_hind'),
-            'right_hind': frame.get('right_hind'),
-        }
-        coordinates_robot_list.append(coordinates_2)
-        robot_indices.append(frame.get('robot_index'))
-    coords_array = KeypointsDataset(coordinates_robot_list)
-
-    embedding_vectors = []
-    # Load the model
-    latent_dim = 50
-    input_dim = 14 * 5
-    vae_loaded = VAE(input_dim, latent_dim)
-    model_save_path ='/Users/jowonkim/Documents/GitHub/EVOC-Research/src/model/vae_model.pth'
-    vae_loaded.load_state_dict(torch.load(model_save_path, weights_only=True)) 
-    vae_loaded.eval()
-
-    with torch.no_grad():
-        for j in range(len(coords_array)):
-            sample_data, mean, std = coords_array[j]
-            _, _, _, z_animal = vae_loaded(sample_data.unsqueeze(0))
-            embedding_vector = z_animal.squeeze().numpy()
-
-            embedding_vectors.append([j, robot_indices[j]] + embedding_vector.tolist())
-
-    latent_df = pd.DataFrame(embedding_vectors, columns=['frame', 'robot_index'] + [f'latent_{k}' for k in range(latent_dim)])
-    print(latent_df.head(3))
-    return latent_df
 
 
 
@@ -196,9 +154,9 @@ def plot_fitness(run_id,fitnesses_all,distance_all, animal_similarity_all,alpha,
     else:
         max_similarities = [np.max(similarity) for similarity in animal_similarity_all]
     max_fitnesses = [np.min(fitness) for fitness in fitnesses_all]
-    print("Max distances:", max_distances)
-    print("Max similarities:", max_similarities)
-    print("Max fitnesses:", max_fitnesses)
+    ("Max distances:", max_distances)
+    ("Max similarities:", max_similarities)
+    ("Max fitnesses:", max_fitnesses)
 
     # distance_animalsimilarity(max_distances,max_similarities,alpha,similarity_type)
     # save_to_csv(run_id,distance_all, animal_similarity_all,alpha,similarity_type)
@@ -253,7 +211,7 @@ def plot_best_fitnesses(max_fitnesses):
         # 如果当前fitness是最好的，则记录它的索引
         if max_fitnesses[i] == current_max:
             best_fitness_positions.append(i)
-    print("Best fitness positions:", best_fitness_positions)
+    ("Best fitness positions:", best_fitness_positions)
     max_fitnesses = max_fitnesses[:240]
     running_max = running_max[:240]
 
@@ -329,3 +287,47 @@ def average_and_std_plot(max_runs=30, similarity_type_to_plot='DTW'):
     plt.legend()
     plt.tight_layout()
     plt.show()
+
+def infer_on_csv(df: pd.DataFrame, with_vae: str) -> pd.DataFrame:
+    scale_data = df.copy()
+
+    for column in ['head', 'middle', 'rear', 'left_front', 'right_front', 'left_hind', 'right_hind']:
+        scale_data[column] = scale_data[column].apply(parse_tuple_string)
+
+    coordinates_robot_list = []
+    robot_indices = []
+    for index, frame in scale_data.iterrows():
+        coordinates_2 = {
+            'head': frame.get('head'),
+            'middle': frame.get('middle'),
+            'rear': frame.get('rear'),
+            'left_front': frame.get('left_front'),
+            'right_front': frame.get('right_front'),
+            'left_hind': frame.get('left_hind'),
+            'right_hind': frame.get('right_hind'),
+        }
+        coordinates_robot_list.append(coordinates_2)
+        robot_indices.append(frame.get('robot_index'))
+    coords_array = KeypointsDataset(coordinates_robot_list)
+
+    embedding_vectors = []
+    # Load the model
+    latent_dim = 50
+    input_dim = 14 * 5
+    vae_loaded = VAE(input_dim, latent_dim)
+    model_save_path = with_vae
+    vae_loaded.load_state_dict(torch.load(model_save_path, weights_only=True)) 
+    vae_loaded.eval()
+
+    with torch.no_grad():
+        for j in range(len(coords_array)):
+            sample_data, mean, std = coords_array[j]
+            _, _, _, z_animal = vae_loaded(sample_data.unsqueeze(0))
+            embedding_vector = z_animal.squeeze().numpy()
+
+            embedding_vectors.append([j, robot_indices[j]] + embedding_vector.tolist())
+
+    latent_df = pd.DataFrame(embedding_vectors, columns=['frame', 'robot_index'] + [f'latent_{k}' for k in range(latent_dim)])
+    print(latent_df.head(3))
+    return latent_df
+

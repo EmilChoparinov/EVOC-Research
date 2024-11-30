@@ -17,8 +17,6 @@ sudo pacman -S cereal
 
 # apt
 sudo apt install cereal
-
-
 ```
 
 - Compatible with: Linux, MacOS Sequoia, Windows 10/11 (Under WSL)

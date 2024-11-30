@@ -21,7 +21,7 @@ def get_labeling_progress(indir: str, outdir: str) -> (int, int, float):
     """Assumes that `indir` and `outdir` contain only VALID FILES"""
     total = len(os.listdir(indir))
     so_far = len(os.listdir(outdir))
-    return total, so_far, so_far/total 
+    return total, so_far, so_far/total * 100 
 
 #=== Argument Collection
 parser = argparse.ArgumentParser()

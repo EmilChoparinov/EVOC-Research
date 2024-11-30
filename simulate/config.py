@@ -52,7 +52,8 @@ from revolve2.modular_robot.brain.cpg import active_hinges_to_cpg_network_struct
 from revolve2.modular_robot_physical import Config, UUIDKey
 
 from revolve2.simulators.mujoco_simulator import LocalSimulator
-from typing import Callable, Literal, TypedDict,get_args
+from typing import Callable, Literal, TypedDict, get_args
+from collections import namedtuple
 from typedef import fitness_functions,similarity_type
 
 import cma
@@ -104,6 +105,28 @@ ea_generations_cnt = 500
 alpha = 0.7
 use_fit: fitness_functions = 'blended'
 type: similarity_type = "DTW"
+
+# NOTE!!! I WROTE IT EXACTLY LIKE THIS SO YOU DONT MODIFY THE STATE. READONLY.
+# If you need an update do tuple._replace(arg=value)
+EAState = namedtuple('EAState', [
+    'max_gen', 'max_runs', 'alpha', 'fitness_function', 'similarity_type', 'animal_data', 'animal_data_infer']) 
+
+def create_state(
+    max_gen: int,
+    max_runs: int,
+    alpha: float,
+    fitness_function: fitness_functions,
+    similarity_type: similarity_type,
+    animal_data: pd.DataFrame,
+    animal_data_infer: pd.DataFrame):
+        return EAState(
+            max_gen=max_gen,
+            max_runs=max_runs,
+            alpha=alpha,
+            fitness_function=fitness_function,
+            similarity_type=similarity_type,
+            animal_data=animal_data,
+            animal_data_infer=animal_data_infer)
 
 # Simulation Parameters ========================================================
 simulator = LocalSimulator(headless=True, num_simulators=concurrent_simulators)

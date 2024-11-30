@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-from revolve2.experimentation.logging import setup_logging
 
 from revolve2.modular_robot import ModularRobot
 from revolve2.modular_robot.brain.cpg import BrainCpgNetworkStatic

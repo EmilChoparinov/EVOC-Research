@@ -120,7 +120,7 @@ def record_best_fitness_generation_csv(
             df.to_csv(output_file, mode='a', index=False, header=False)
             # print(f"Frame {idx} of generation {generation_id} saved to {output_file}")
         except Exception as e:
-            print(f"Error processing frame {idx} in generation {generation_id}: {e}")
+            (f"Error processing frame {idx} in generation {generation_id}: {e}")
 
 
 

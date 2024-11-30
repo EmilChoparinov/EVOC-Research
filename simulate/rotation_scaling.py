@@ -57,8 +57,9 @@ def get_data_with_forward_center(robots: List[ModularRobot], behaviors: List) ->
 
     pd_coord_list['center_x'] = pd_coord_list[x_columns].mean(axis=1)
     pd_coord_list['center_y'] = pd_coord_list[y_columns].mean(axis=1)
+    #Move Direction
     pd_coord_list["forward_x"] = pd_coord_list["head_x"] - pd_coord_list["center_x"]
-    pd_coord_list["forward_y"] = pd_coord_list["head_x"] - pd_coord_list["center_x"]
+    pd_coord_list["forward_y"] = pd_coord_list["head_y"] - pd_coord_list["center_y"]
     # print(pd_coord_list.head(11))
     return pd_coord_list
 
@@ -90,8 +91,11 @@ def translation_rotation(df: pd.DataFrame) -> pd.DataFrame:
             'rear': np.array([row.get('rear_x', np.nan), row.get('rear_y', np.nan)]),
             'right_front': np.array([row.get('right_front_x', np.nan), row.get('right_front_y', np.nan)]),
             'left_front': np.array([row.get('left_front_x', np.nan), row.get('left_front_y', np.nan)]),
-            'right_hind': np.array([row.get('right_hind_x', np.nan), row.get('right_hind_y', np.nan)]),
-            'left_hind': np.array([row.get('left_hind_x', np.nan), row.get('left_hind_y', np.nan)]),
+            # 'right_hind': np.array([row.get('right_hind_x', np.nan), row.get('right_hind_y', np.nan)]),
+            # 'left_hind': np.array([row.get('left_hind_x', np.nan), row.get('left_hind_y', np.nan)]),
+            # flip if not corrected
+            'right_hind': np.array([row.get('left_hind_x', np.nan), row.get('left_hind_y', np.nan)]),
+            'left_hind': np.array([row.get('right_hind_x', np.nan), row.get('right_hind_y', np.nan)]),
         }
 
         # Translate and rotate each point
@@ -203,7 +207,6 @@ def size_scaling(df: pd.DataFrame) -> pd.DataFrame:
             'head': tuple(scaled_robot_coordinates[0]),
             'Frame': i,
             'robot_index': robot_index,
-
             'middle': tuple(scaled_robot_coordinates[1]),
             'rear': tuple(scaled_robot_coordinates[2]),
             'right_front': tuple(scaled_robot_coordinates[3]),
@@ -213,5 +216,5 @@ def size_scaling(df: pd.DataFrame) -> pd.DataFrame:
         })
 
     scaled_robot_data = pd.DataFrame(scaled_robot_data)
-    print(scaled_robot_data.head(3))
+    # print(scaled_robot_data.head(3))
     return scaled_robot_data

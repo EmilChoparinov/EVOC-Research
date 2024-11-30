@@ -1,3 +1,4 @@
+from fileinput import filename
 
 import pandas as pd
 import numpy as np
@@ -12,8 +13,13 @@ from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial.distance import cdist
+import os
+from matplotlib.colors import ListedColormap
+import matplotlib.pyplot as plt
+
 
 def VAE_similarity(df_robot: pd.DataFrame, df_animal: pd.DataFrame) -> list:
+    # print("df_animal",df_animal)
     df_robot = df_robot.drop(columns=['frame'], errors='ignore')
     df_animal = df_animal.drop(columns=['frame'], errors='ignore')
     df_animal = df_animal.drop(columns=['robot_index'], errors='ignore')
@@ -60,7 +66,7 @@ def infer_on_csv(df: pd.DataFrame) -> pd.DataFrame:
     latent_dim = 50
     input_dim = 14 * 5
     vae_loaded = VAE(input_dim, latent_dim)
-    model_save_path = './src/model/vae_model.pth'
+    model_save_path ='/Users/jowonkim/Documents/GitHub/EVOC-Research/src/model/vae_model.pth'
     vae_loaded.load_state_dict(torch.load(model_save_path, weights_only=True)) 
     vae_loaded.eval()
 
@@ -137,7 +143,7 @@ class VAE(nn.Module):
         super(VAE, self).__init__()
         # Encoder layers
         self.fc1 = nn.Linear(input_dim, 128)
-        self.bn1 = nn.BatchNorm1d(128)
+        # self.bn1 = nn.BatchNorm1d(128)
         self.fc2 = nn.Linear(128, 64)
         self.fc31 = nn.Linear(64, latent_dim)  # mean
         self.fc32 = nn.Linear(64, latent_dim)  # log variance
@@ -183,28 +189,143 @@ def vae_loss(recon_x, x, mu, logvar, beta=0.001):
     kl_divergence = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
     return recon_loss + beta * kl_divergence
 
-def plot_fitness(distance_all, animal_similarity_all):
-    max_distances = [np.min(distance) for distance in distance_all]
-    max_similarities = [np.min(similarity) for similarity in animal_similarity_all]
-
-    sum_values = [0.7 * max_distance + 0.3 * max_similarity for max_distance, max_similarity in
-                  zip(max_distances, max_similarities)]
+def plot_fitness(run_id,fitnesses_all,distance_all, animal_similarity_all,alpha,similarity_type):
+    max_distances = [np.max(distance) for distance in distance_all]
+    if similarity_type == 'Cosine':
+        max_similarities = [np.min(similarity) for similarity in animal_similarity_all]
+    else:
+        max_similarities = [np.max(similarity) for similarity in animal_similarity_all]
+    max_fitnesses = [np.min(fitness) for fitness in fitnesses_all]
     print("Max distances:", max_distances)
     print("Max similarities:", max_similarities)
+    print("Max fitnesses:", max_fitnesses)
+
+    # distance_animalsimilarity(max_distances,max_similarities,alpha,similarity_type)
+    # save_to_csv(run_id,distance_all, animal_similarity_all,alpha,similarity_type)
+    # plot_best_fitnesses(max_fitnesses)
     iterations = np.arange(1, len(distance_all) + 1)
 
-    plt.figure(figsize=(10, 6))
+    fig, axs = plt.subplots(3, 1, figsize=(10, 15))
+    fig.subplots_adjust(hspace=1)
 
-    plt.plot(iterations, max_distances, label="Distance", color='blue', marker='o')
+    axs[0].plot(iterations, max_distances, label="Distance", color='blue', marker='o')
+    axs[0].set_title("Distance over Generations")
+    axs[0].set_xlabel("Generation")
+    axs[0].set_ylabel("Max Distance")
+    axs[0].legend()
 
-    plt.plot(iterations, max_similarities, label="Animal Similarity", color='green', marker='x')
+    axs[1].plot(iterations, max_similarities, label="Animal Similarity", color='green', marker='x')
+    axs[1].set_title("Animal Similarity over Generations")
+    axs[1].set_xlabel("Generation")
+    axs[1].set_ylabel("Max Animal Similarity")
+    axs[1].legend()
 
-    plt.plot(iterations, sum_values, label="Sum of Distance & Animal Similarity", color='red', marker='s')
+    axs[2].plot(iterations, max_fitnesses, label="Sum of Distance & Animal Similarity", color='red', marker='s')
+    axs[2].set_title("Fitness over Generations")
+    axs[2].set_xlabel("Generation")
+    axs[2].set_ylabel("Max Fitness Value")
+    axs[2].legend()
 
-    plt.title("Fitness Plot: Distance vs Animal Similarity")
-    plt.xlabel("Generation")
-    plt.ylabel("Max Value")
+    # plt.tight_layout()
+    plt.show()
 
-    # plt.xticks(iterations)
+def distance_animalsimilarity(distance,animal_similarity,alpha,similarity_type):
+    distance=3*np.array(distance)
+    colors = np.linspace(0, len(distance)-1, len(distance))
+
+    plt.figure(figsize=(8, 5))
+    scatter = plt.scatter(animal_similarity, distance, c=colors,cmap='viridis')
+    plt.colorbar(scatter, label="")
+    plt.xlabel(f"{similarity_type}_Similarity")
+    plt.ylabel("Distance")
+    plt.title(f"Alpha={alpha}")
+    plt.grid(True)
+    plt.show()
+
+
+def plot_best_fitnesses(max_fitnesses):
+    running_max = []
+    current_max = float('inf')
+    best_fitness_positions = []  # 用于记录最好的 fitness 值的位置序号
+    for i in range(len(max_fitnesses)):
+        current_max = min(current_max, max_fitnesses[i])
+        running_max.append(current_max)
+        # 如果当前fitness是最好的，则记录它的索引
+        if max_fitnesses[i] == current_max:
+            best_fitness_positions.append(i)
+    print("Best fitness positions:", best_fitness_positions)
+    max_fitnesses = max_fitnesses[:240]
+    running_max = running_max[:240]
+
+    plt.figure(figsize=(20, 8))
+
+    # 蓝色：每一次实验的 fitness 值
+    plt.bar(range(len(max_fitnesses)), [-val for val in max_fitnesses], color='b', label="Fitness at each iteration")
+
+    # 红色：迄今为止的最高 fitness 值
+    plt.plot([-val for val in running_max], marker='o', linestyle='-', color='r', label='Best fitness')
+    plt.title('Fitnesses')
+    plt.xlabel('Generations')
+    plt.ylabel('Fitnesses Value')
+    plt.grid(True)
     plt.legend()
+    plt.show()
+
+
+
+
+
+
+
+def save_to_csv(run_id, fitnesses_all,distance_all, animal_similarity_all, alpha, similarity_type):
+    output_dir = f"results-{alpha}-{similarity_type}"
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    filename = os.path.join(output_dir, f'distance_and_similarity-{run_id}-{alpha}-{similarity_type}.csv')
+
+    # Flatten the lists if they are 2D or nested
+    flattened_distance = [item for sublist in distance_all for item in sublist]
+    flattened_similarity = [item for sublist in animal_similarity_all for item in sublist]
+
+    # Create a DataFrame with the flattened lists
+    df = pd.DataFrame({
+        'Distance': flattened_distance,
+        'Animal Similarity': flattened_similarity,
+        'alpha': alpha,
+        'similarity_type': similarity_type
+    })
+
+    # Save the DataFrame to CSV
+    df.to_csv(filename, index=False)
+    print(f"Data saved to {filename}")
+
+
+
+
+def average_and_std_plot(max_runs=30, similarity_type_to_plot='DTW'):
+
+    for run_id in range(max_runs):
+        filename = f'distance_and_similarity-{run_id}.csv'
+    df = pd.read_csv(filename)
+    distance_all = df['Distance']
+    animal_similarity_all = df['Animal_Similarity']
+
+    means_distance = [np.mean(distance) for distance in distance_all]
+    stds_distance = [np.std(distance) for distance in distance_all]
+    means_similarity = [np.mean(similarity) for similarity in animal_similarity_all]
+    stds_similarity = [np.std(similarity) for similarity in animal_similarity_all]
+
+    plt.figure(figsize=(8, 6))
+
+    for i in range(len(means_distance)):
+        plt.errorbar(means_similarity[i], means_distance[i],
+                     xerr=stds_similarity[i], yerr=stds_distance[i],
+                     fmt='o', label=f'Group {i + 1}')
+
+    plt.xlabel('Animal Similarity (Mean ± Std)')
+    plt.ylabel('Distance (Mean ± Std)')
+    plt.title('Average Distance vs Animal Similarity (Per Group)')
+    plt.grid(True)
+    plt.legend()
+    plt.tight_layout()
     plt.show()

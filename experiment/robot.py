@@ -22,9 +22,7 @@ from revolve2.standards.modular_robots_v2 import gecko_v2, snake_v2
 from revolve2.modular_robot.body.base import ActiveHinge
 
 import pandas as pd
-import threading
 import numpy as np
-import cv2
 
 from dataclasses import dataclass
 from typing import Literal
@@ -119,7 +117,7 @@ batch_cpg_params = [
     [-1.6459108 ,  0.57498081,  0.00844196, -1.99963482,  0.81886104,
        -1.7708486 ,  0.89132614, -1.50606673, -0.86288779]
 ]
-
+import pdb;pdb.set_trace()
 
 body = gecko_v2()
 
@@ -254,7 +252,6 @@ robot = ModularRobot(body=body,
 def on_prepared() -> None:
     print("Robot is ready. Press enter to start")
     input()
-
 pmap = PhysMap.map_with(body)
 body_map: dict[int, ActiveHingeV2] = {
         31: body.core_v2.right_face.bottom, # right arm

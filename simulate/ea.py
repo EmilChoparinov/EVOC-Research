@@ -5,19 +5,22 @@ from revolve2.modular_robot.brain.cpg import BrainCpgNetworkStatic
 
 from revolve2.modular_robot_simulation import ModularRobotScene, simulate_scenes
 from revolve2.standards.simulation_parameters import make_standard_batch_parameters
-
+from config import alpha
 import logging
 import math
 import numpy as np
-from typedef import simulated_behavior, genotype
-from data_collection import record_elite_generations
 
+from VAE import plot_fitness,infer_on_csv,save_to_csv
+from typedef import simulated_behavior, genotype
+from data_collection import record_elite_generations,record_best_fitness_generation_csv
+from animal_similarity import create_simulation_video
 import data_collection
 import evaluate
 import config
 import csv
 import random
 import os
+import pandas as pd
 
 def export_ea_metadata(run_id: int = 0):
     seed = config.random_seed if hasattr(config, 'random_seed') else random.randint(0, 1000000)
@@ -48,7 +51,11 @@ from rotation_scaling import get_data_with_forward_center,translation_rotation
 
 
 # TODO: This function has been primed to be embarrassingly parallel if more performance required.
-def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt):
+
+# def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt):
+def process_ea_iteration(alpha,fitness_function,similarity_type,max_gen: int, max_runs: int = config.ea_runs_cnt):
+
+    alpha = alpha if alpha is not None else config.alpha
 
     if(max_runs == 0): return
 
@@ -56,10 +63,21 @@ def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt):
     export_ea_metadata(max_runs)
 
     # Stack `max_run` times this function and save output
-    process_ea_iteration(max_gen, max_runs - 1)
+    process_ea_iteration(alpha,fitness_function,similarity_type,max_gen, max_runs - 1)
+    
+    setup_logging(file_name=config.generate_log_file(max_runs))
+    logging.info("Start CMA-ES Optimization")
     
     cma_es = config.generate_cma()
-    
+
+    # Read animal data
+    df_animal = pd.read_csv('./src/model/slow_with_linear_4.csv')
+
+    df_animal = infer_on_csv(df_animal)
+    distance_all=[]
+    animal_similarities_all=[]
+    fitnesses_all = []
+    # similarity_type = "DTW"
     # Write the columns into the csv 
     behavior_csv = config.generate_fittest_xy_csv(max_runs)
     config.write_buffer.to_csv(behavior_csv, index=False)
@@ -73,16 +91,12 @@ def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt):
         solutions = cma_es.ask()
 
         robots, behaviors = ea_simulate_step(solutions)
+        fitnesses,distance,animal_similarity= evaluate.evaluate(robots, behaviors,df_animal,alpha,similarity_type )
 
-        #Rotation
-        translation_rotation(get_data_with_forward_center(robots, behaviors))
-        # TODO scaling
-        
-        # Select fitness function based on configuration
-        match config.use_fit:
-            case "distance": fitnesses = -evaluate.distance(robots, behaviors)
-            case "similariy": fitnesses = -evaluate.similarity(robots, behaviors)
-            case "blended": fitnesses = -evaluate.blend(robots, behaviors, config.alpha)
+        distance_all.append(distance)
+        animal_similarities_all.append(animal_similarity)
+        fitnesses_all.append(fitnesses)
+
 
         cma_es.tell(solutions, fitnesses)
 
@@ -91,12 +105,15 @@ def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt):
 
         # Data Collection Step
         data_collection.record_behavior(
-            best_robot, best_fitness, best_behavior, generation_id=generation_i, alpha=config.alpha,
-            fitness_function=config.use_fit)
+            best_robot, best_fitness, best_behavior, generation_id=generation_i, alpha=alpha,
+            fitness_function=fitness_function)
 
         data_collection.record_elite_generations(
             run_id=max_runs, generation=generation_i, fitness=best_fitness, matrix=best_robot.brain._weight_matrix,
-            alpha=config.alpha, fitness_function=config.use_fit)
+            alpha=alpha, fitness_function=fitness_function)
+
+        record_best_fitness_generation_csv(max_runs,best_robot, best_fitness, best_behavior, generation_id=generation_i, alpha=alpha,
+            fitness_function=fitness_function,similarity_type=similarity_type)
 
         # top 3 fitness and corresponding robots and weight matrices
         top_3_indices = sorted(range(len(fitnesses)), key=lambda i: fitnesses[i], reverse=True)[:3]
@@ -113,9 +130,15 @@ def process_ea_iteration(max_gen: int, max_runs: int = config.ea_runs_cnt):
         
         # Clean-up Step. Flush buffer to disk after every evaluation step
         logging.info(f"Recording best fit behavior to {behavior_csv}")
-        config.write_buffer.to_csv(behavior_csv, index=False, header=False, mode='a')
-        config.write_buffer.drop(config.write_buffer.index, inplace=True)
-    
+        try:
+            config.write_buffer.to_csv(behavior_csv, index=False, header=False, mode='a')
+            config.write_buffer.drop(config.write_buffer.index, inplace=True)
+        except Exception as e:
+            logging.error(f"Error while writing to CSV: {e}")
+            raise
+    save_to_csv(max_runs,fitnesses_all,distance_all, animal_similarities_all,alpha,similarity_type)
+
+    create_simulation_video(max_runs,alpha,similarity_type)
     # Do not need to flush the buffer at this step because it's always the
     # last thing the loop does.
     logging.info(f"EA Iteration {max_runs} complete")

@@ -2,6 +2,8 @@ import logging
 import socketio
 import eventlet
 from flask import Flask
+import threading
+from queue import  Queue
 
 from dataclasses import dataclass
 from typing import Literal
@@ -37,9 +39,11 @@ def boot_sockets(ctype: Literal['server','client']):
     if ctype == 'server':
         sio = socketio.Server()
         app.wsgi_app = socketio.WSGIApp(sio, app.wsgi_app)
-        eventlet.wsgi.server(eventlet.listen(('', config.port)), app)
 
-    command_buffer: list[Command] = []
+        print(f"Opening server in new thread on port: {config.port}")
+        threading.Thread(target=lambda: eventlet.wsgi.server(eventlet.listen(('', config.port)), app)).start()
+
+    command_buffer = Queue()
 
     @sio.event
     def connect():
@@ -51,6 +55,6 @@ def boot_sockets(ctype: Literal['server','client']):
 
     @sio.on('message')
     def on_message_recv(msg: Message):
-        command_buffer += msg.commands
+        [command_buffer.put(cmd) for cmd in msg.commands]
 
     return sio, command_buffer, lambda x: sio.emit('message', x)

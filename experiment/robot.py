@@ -182,8 +182,7 @@ class BatchTesterBrainInstance(BrainInstance):
         # message exists in the buffer and only perform the last one. We flush
         # the rest. As such we make some assumptions about the restart command
         if len(commands) != 0:
-            cmd = commands.pop()
-            commands.clear()
+            cmd = commands.get()
             match cmd.type:
                 case "pause": self.play_cpg = False
                 case "play": self.play_cpg = True

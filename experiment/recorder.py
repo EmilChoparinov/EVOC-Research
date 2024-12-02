@@ -94,7 +94,7 @@ while True:
     # Process the next command given in the queue. If the queue is empty, do
     # nothing this frame
     if len(commands) != 0:
-        cmd = commands.pop(0)
+        cmd = commands.get()
         
         match cmd.type:
             case "new_experiment":

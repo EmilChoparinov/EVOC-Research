@@ -1,6 +1,7 @@
 import logging
 import socketio
 import eventlet
+from pprint import pprint
 from flask import Flask
 import threading
 from queue import  Queue
@@ -40,18 +41,19 @@ def boot_sockets(ctype: Literal['server','client']):
         sio = socketio.Server()
         app.wsgi_app = socketio.WSGIApp(sio, app.wsgi_app)
 
+        @sio.event
+        def connect(sid, environ):
+            logging.info(f"Established socket connection: {sid}")
+            logging.info(f"{pprint(environ)}")
+
+        @sio.event
+        def disconnect():
+            logging.info(f"Cannot reach other wire!")
+
         print(f"Opening server in new thread on port: {config.port}")
         threading.Thread(target=lambda: eventlet.wsgi.server(eventlet.listen(('', config.port)), app)).start()
 
     command_buffer = Queue()
-
-    @sio.event
-    def connect():
-        logging.info(f"Established socket connection")
-
-    @sio.event
-    def disconnect():
-        logging.info(f"Cannot reach other wire!")
 
     @sio.on('message')
     def on_message_recv(msg: Message):

@@ -84,7 +84,7 @@ size = (1200, 1200)
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 
 sio, commands, emit = boot_sockets('client')
-sio.connect(config.robot_ip)
+sio.connect(f"{config.robot_ip}:{config.port}")
 
 enable_recording = True
 

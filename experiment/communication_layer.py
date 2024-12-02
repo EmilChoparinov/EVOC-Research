@@ -1,6 +1,7 @@
 import logging
-import eventlet
 import socketio
+import eventlet
+from flask import Flask
 
 from dataclasses import dataclass
 from typing import Literal
@@ -31,9 +32,12 @@ class Message:
 
 def boot_sockets(ctype: Literal['server','client']):
     sio = socketio.Client()
+    app = Flask(__name__)
+
     if ctype == 'server':
         sio = socketio.Server()
-        eventlet.wsgi.server(eventlet.listen(('',config.port), socketio.WSGIApp(sio))
+        app.wsgi_app = socketio.WSGIApp(sio, app.wsgi_app)
+        eventlet.wsgi.server(eventlet.listen(('', config.port)), app)
 
     command_buffer: list[Command] = []
 

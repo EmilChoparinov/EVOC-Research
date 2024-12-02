@@ -4,6 +4,9 @@
 .vscode/
 out/
 
+simulate/dtw*
+simulate/results*
+
 *.csv
 *.zip
 *log

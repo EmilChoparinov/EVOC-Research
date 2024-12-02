@@ -1,9 +1,12 @@
 import logging
+import eventlet
 import socketio
 
 from dataclasses import dataclass
 from typing import Literal
 from enum import Enum
+
+import experiment.config as config
 
 event = Literal['new_experiment', 'pause', 'play', 'restart']
 
@@ -26,8 +29,12 @@ class Command:
 class Message:
     commands: list[Command]
 
-def boot_sockets():
+def boot_sockets(ctype: Literal['server','client']):
     sio = socketio.Client()
+    if ctype == 'server':
+        sio = socketio.Server()
+        eventlet.wsgi.server(eventlet.listen(('',config.port), socketio.WSGIApp(sio))
+
     command_buffer: list[Command] = []
 
     @sio.event

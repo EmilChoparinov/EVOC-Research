@@ -1,2 +1,2 @@
-recorder_ip = "localhost:5000"
-robot_ip = "localhost:5000"
+port = 7778
+robot_ip = "10.15.3.59"

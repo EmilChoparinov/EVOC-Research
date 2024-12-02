@@ -42,7 +42,7 @@ from revolve2.modular_robot_physical import Config, UUIDKey
 from revolve2.modular_robot_physical.remote import run_remote
 
 from experiment.revolve_layer import remote_control_with_polling_rate
-from src.config import PhysMap, cameras
+from simulate.config import PhysMap, cameras
 
 import numpy as np
 
@@ -140,8 +140,7 @@ brains = [
 ]
 
 # Entrypoint for communication between recorder
-sio, commands, emit = boot_sockets()
-sio.connect(config.recorder_ip)
+sio, commands, emit = boot_sockets('server')
 
 @dataclass
 class BatchTesterBrain(Brain):

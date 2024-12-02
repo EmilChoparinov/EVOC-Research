@@ -83,7 +83,7 @@ height = int(camera.get(cv2.CAP_PROP_FRAME_HEIGHT) + 0.5)
 size = (1200, 1200)
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 
-sio, commands, emit = boot_sockets()
+sio, commands, emit = boot_sockets('client')
 sio.connect(config.robot_ip)
 
 enable_recording = True

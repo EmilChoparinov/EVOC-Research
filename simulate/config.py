@@ -108,6 +108,7 @@ type: similarity_type = "DTW"
 
 # NOTE!!! I WROTE IT EXACTLY LIKE THIS SO YOU DONT MODIFY THE STATE. READONLY.
 # If you need an update do tuple._replace(arg=value)
+# - EDC
 EAState = namedtuple('EAState', [
     'max_gen', 'max_runs', 'alpha', 'fitness_function', 'similarity_type', 'animal_data', 'animal_data_infer']) 
 

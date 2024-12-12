@@ -43,12 +43,12 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--outdir", type=valid_dir_path, default="./labeled-dataset",
+    "--outdir", type=valid_dir_path, default="./dataset-labeled",
     help="The output directory of the labeled dataset"
 )
 
 parser.add_argument(
-    "--markdir", type=valid_dir_path, default="./marked-dataset",
+    "--markdir", type=valid_dir_path, default="./dataset-marked",
     help="Contains the images with the labels burned into them" 
 )
 

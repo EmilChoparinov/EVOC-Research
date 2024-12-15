@@ -7,6 +7,8 @@ import logging
 import argparse
 import matplotlib
 matplotlib.use('Agg')  # Use non-interactive backend for rendering plots
+import seaborn as sns
+
 
 # Global results directory
 results_dir = "results"
@@ -22,27 +24,38 @@ logging.basicConfig(filename=log_file_path,
 # Step 1: Load data and extract best rows
 def load_and_find_best(base_dir):
     """
-    Load all nested 'results-*' folders in the base directory and extract the best rows based on 'Distance' from each CSV.
+    Load all nested 'results-*' folders in the base directory and extract the best rows based on 'Distance' from each CSV,
+    while ensuring the alphas are sorted in the correct numeric order.
     """
     data_by_folder = {}
     for root, dirs, files in os.walk(base_dir):
-        # Identify the "results-*" folders specifically
-        folder_name = os.path.basename(root)
-        if folder_name.startswith("results-") and files:  # Only process "results-*" folders with files
+        # Check for nested "results-*" folders in all levels
+        if "results-" in root and files:
+            print(f"Processing folder: {root}")  # Debugging print
             best_rows = []
             for file in files:
                 if file.endswith(".csv"):
                     file_path = os.path.join(root, file)
+                    print(f"Reading file: {file_path}")  # Debugging print
                     try:
                         df = pd.read_csv(file_path)
-                        best_row = df.loc[df['Distance'].idxmax()]  # Find the row with the highest Distance
-                        best_rows.append(best_row)
+                        if 'Distance' in df.columns:  # Ensure the 'Distance' column exists
+                            best_row = df.loc[df['Distance'].idxmax()]  # Find the row with the highest Distance
+                            best_rows.append(best_row)
+                        else:
+                            print(f"Skipping file {file_path}, no 'Distance' column.")  # Debugging print
                     except Exception as e:
-                        logging.error(f"Error processing {file_path}: {e}")
+                        print(f"Error reading {file_path}: {e}")  # Debugging print
             if best_rows:
-                data_by_folder[folder_name] = pd.DataFrame(best_rows)
-    return data_by_folder
+                folder_key = os.path.relpath(root, base_dir)  # Use relative path as folder name
+                data_by_folder[folder_key] = pd.DataFrame(best_rows)
 
+    # Sort the folders by their numeric 'alpha' value extracted from the folder name
+    sorted_data_by_folder = {}
+    for key in sorted(data_by_folder.keys(), key=lambda x: float(x.split('-')[1])):
+        sorted_data_by_folder[key] = data_by_folder[key]
+
+    return sorted_data_by_folder
 
 # Step 2: Perform statistical tests
 def compare_conditions(dataframes, metric):
@@ -148,7 +161,130 @@ def plot_distance_similarity(dataframes):
     logging.info(f"Saved Distance vs Animal Similarity plot as PDF to {plot_path}")
 
 
-# Main script
+from scipy.stats import linregress
+
+def combined_scatter_with_densities_and_fit_results(data_by_folder):
+    """
+    Create a single combined scatter plot with marginal density plots
+    for all folders, color-coded by folder, display regression results below the plot,
+    and clip axes to the range [0, 1].
+    """
+    # Set up the figure
+    fig = plt.figure(figsize=(10, 12))  # Extra height for fit results
+    grid = plt.GridSpec(4, 4, hspace=0.5, wspace=0.5)  # Grid for scatter + marginal plots
+
+    # Axes for scatter plot
+    scatter_ax = fig.add_subplot(grid[1:4, 0:3])
+
+    # Axes for marginal densities
+    x_density_ax = fig.add_subplot(grid[0, 0:3], sharex=scatter_ax)
+    y_density_ax = fig.add_subplot(grid[1:4, 3], sharey=scatter_ax)
+
+    # Colors for the folders
+    hard_coded_colors = ['red', 'blue', 'green', 'orange', 'purple']
+    num_folders = len(data_by_folder)
+
+    if num_folders > len(hard_coded_colors):
+        logging.warning("More folders than available hard-coded colors. Some folders may share the same color.")
+
+    # Extract numeric part of folder names for the legend
+    legend_labels = [folder.split('-')[1] for folder in data_by_folder.keys()]
+
+    # Combined data for regression
+    combined_distances = []
+    combined_similarities = []
+
+    for color, folder, label in zip(hard_coded_colors[:num_folders], data_by_folder.keys(), legend_labels):
+        df = data_by_folder[folder]
+
+        # Append data for regression
+        combined_distances.extend(df['Distance'])
+        combined_similarities.extend(df['Animal Similarity'])
+
+        # Scatter plot
+        scatter_ax.scatter(
+            df['Distance'],
+            df['Animal Similarity'],
+            label=label,  # Use the numeric part as label
+            color=color,
+            alpha=0.8,
+            s=60
+        )
+
+        # X-axis density (Distance)
+        sns.kdeplot(
+            df['Distance'],
+            color=color,
+            ax=x_density_ax,
+            linewidth=2,
+            alpha=0.7
+        )
+
+        # Y-axis density (Animal Similarity)
+        sns.kdeplot(
+            df['Animal Similarity'],
+            color=color,
+            ax=y_density_ax,
+            linewidth=2,
+            alpha=0.7,
+            vertical=True
+        )
+
+    # Perform linear regression
+    slope, intercept, r_value, p_value, std_err = linregress(combined_distances, combined_similarities)
+    line_x = np.linspace(max(0, min(combined_distances)), min(1, max(combined_distances)), 100)
+    line_y = slope * line_x + intercept
+
+    # Plot the regression line
+    scatter_ax.plot(
+        line_x, line_y, color='black', linestyle='--', linewidth=2, label="Regression Line"
+    )
+
+    # Clip the axes to [0, 1]
+    scatter_ax.set_xlim(0, 1)
+    scatter_ax.set_ylim(0, 1)
+
+    # Customize scatter plot
+    scatter_ax.set_xlabel("Distance")
+    scatter_ax.set_ylabel("Animal Similarity (DTW)")
+    scatter_ax.grid(True, linestyle='--', alpha=0.7)
+
+    # Remove x ticks for the top density plot
+    x_density_ax.set_yticks([])
+    x_density_ax.set_ylabel("Density")
+
+    # Remove y ticks for the side density plot
+    y_density_ax.set_xticks([])
+    y_density_ax.set_xlabel("Density")
+
+    # Add legend for folders only
+    scatter_ax.legend(
+        title="Alpha levels",
+        loc='upper right',
+        bbox_to_anchor=(1.3, 1.3),  # Top-right corner
+        fontsize='small'
+    )
+
+    # Add regression results below the plot
+    fig.text(
+        0.1, -0.02,  # X and Y positions below the plot
+        f"Linear Regression Fit: $R^2$ = {r_value**2:.2f}, p-value = {p_value:.3e}, slope = {slope:.2f}, intercept = {intercept:.2f}",
+        fontsize=10,
+        ha='left'
+    )
+    fig.suptitle("Distance and Animal Similarity (DTW) for Different Alpha Levels", fontsize=14, y=1.02)
+
+    # Save the plot
+    plot_path = os.path.join(results_dir, "Combined_Scatter_with_Densities_and_Fit_Results_Clipped.pdf")
+    plt.savefig(plot_path, format='pdf', bbox_inches='tight')
+    plt.close()
+    logging.info(f"Saved combined scatter plot with densities and clipped axes as PDF to {plot_path}")
+
+
+
+
+
+# Add the new function call in the main script
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Analyze experiment results from nested folders.")
     parser.add_argument("base_dir", type=str, help="Base directory containing 'results-*' folders")
@@ -181,5 +317,8 @@ if __name__ == "__main__":
         logging.info("\nGenerating Distance vs Animal Similarity scatter plot...")
         plot_distance_similarity(data_by_folder)
 
+        # Step 5: Plot scatter plot with folders as different colors
+        logging.info("\nGenerating scatter plot colored by folder...")
+        combined_scatter_with_densities_and_fit_results(data_by_folder)
 
         print(f"Results are in \"{args.base_dir}/results/\" folder :)")

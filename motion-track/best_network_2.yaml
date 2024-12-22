@@ -1,0 +1,67 @@
+!!omap
+- data_path: ~/Engineering/Yihongs-Source/training/train/label_data_formal
+- manipulator: !!omap
+  - name: gecko
+  - keypoints:
+    - name: head
+      friendly_name: head
+      ros_frame: head
+    - name: box
+      friendly_name: box
+      ros_frame: box
+    - name: joint
+      friendly_name: joint
+      ros_frame: joint
+- architecture: !!omap
+  - type: vgg
+  - target: belief_maps
+  - input_heads:
+    - image_rgb
+  - output_heads:
+    - belief_maps
+  - image_normalization: !!omap
+    - mean:
+      - 0.5
+      - 0.5
+      - 0.5
+    - stdev:
+      - 0.5
+      - 0.5
+      - 0.5
+  - loss: !!omap
+    - type: mse
+  - image_preprocessing: shrink-and-crop
+- training: !!omap
+  - config: !!omap
+    - epochs: 100
+    - training_data_fraction: 0.8
+    - validation_data_fraction: 0.19999999999999996
+    - batch_size: 4
+    - data_augmentation: !!omap
+      - image_rgb: true
+    - worker_size: 8
+    - optimizer: !!omap
+      - type: adam
+      - learning_rate: 0.0001
+    - image_preprocessing: shrink-and-crop
+    - image_raw_resolution:
+      - 400.0
+      - 400.0
+    - net_input_resolution:
+      - 400
+      - 400
+    - net_output_resolution:
+      - 100
+      - 100
+  - platform: !!omap
+    - user: errno
+    - hostname: errno
+    - gpu_ids: []
+  - results: !!omap
+    - epochs_trained: 98
+    - training_loss: !!omap
+      - mean: 5.184818141633833e-06
+      - stdev: 3.029518791981184e-06
+    - validation_loss: !!omap
+      - mean: 0.0003562532779492008
+      - stdev: 6.884445105156588e-05

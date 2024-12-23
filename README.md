@@ -8,7 +8,22 @@ There are multiple directories.
 
 ## Prerequisites
 - A valid version of python required. I am under `3.10.12`. You can check by doing `python3 --version`. NOTE: `Python 3.12.x` do not work. `Revolve2-standards` requires either 3.10.x or 3.11.x.
+ ```
+macOS:
+conda create -n py310 python=3.10
+conda activate py310
+then run 
+source enter.sh
 
+or
+      brew install python@3.10
+      echo 'export PATH="/usr/local/opt/python@3.10/bin:$PATH"' >> ~/.zshrc
+      source ~/.zshrc
+then run 
+source enter.sh
+
+
+``` 
 - A dependency attached to this repository from the CI-Group, MultiNEAT is required for installing
   Revolve2. You can get it on Linux or Mac with the following commands:
 ```
@@ -44,7 +59,12 @@ options:
   --skip       Do not perform ea iterations
   --runs RUNS  Times to run EA
   --gens GEN    How many generations per run
+  --
+  -- similarity_type
 ```
+Example:
+
+ python simulate/run.py --cleanup --animal-data  "simulate/model/slow_interpolated_4.csv" --vae "simulate/model/vae_model.pth"  --runs 1 --gens 2 --alpha 0.25 --with-fit "blended" --similarity-type "MSE" --log "log.txt"
 
 ### Helpful Configurations:
 Clears the directory of all CSVs and log files.
@@ -99,4 +119,5 @@ python3 video2csv.py
 
 ## Contacts
 Emil Choparionv - emilchoparinov@gmail.com 
+
 Yushuang Wang

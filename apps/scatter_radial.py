@@ -43,7 +43,7 @@ def fix_torso_position(data: pd.DataFrame, torso_part: str = 'middle') -> pd.Dat
             if part in ['generation_id', 'generation_best_fitness_score', 'frame_id', 'center-euclidian', 'alpha', 'fitness_function']:
                 continue  # Skip non-position columns
             part_x, part_y = row[part]
-            adjusted_data.at[index, part] = (part_x - torso_x, part_y - torso_y)
+            adjusted_data.at[index, part] = (part_x, part_y)
 
     return adjusted_data
 
@@ -92,10 +92,10 @@ def plot_and_save_first_100_rows_with_colors(data, body_parts, colors, save_path
                 x, y = row[part]
                 plt.scatter(x, y, color=colors[i], label=f"{part}" if index == 0 else "", alpha=0.6)
 
-    plt.title("Visualization of First 100 Rows - Keypoints with Colors")
+    plt.title("Points of Interest Scatter")
     plt.xlabel("X Coordinate")
     plt.ylabel("Y Coordinate")
-    plt.legend(loc='upper left', fontsize='small', ncol=2)
+    plt.legend(loc='upper left', bbox_to_anchor=(1,1), fontsize='small', ncol=2)
     plt.grid(True)
     plt.axis('equal')
 

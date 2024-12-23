@@ -1,3 +1,4 @@
+from copy import deepcopy
 import mujoco
 import numpy as np
 import numpy.typing as npt
@@ -19,6 +20,7 @@ from ._abstraction_to_mujoco_mapping import AbstractionToMujocoMapping
 class SimulationStateImpl(SimulationState):
     """Implementation of the simulation state interface for MuJoCo."""
 
+    _geometries: dict[str, npt.NDArray[np.float_]]
     _xpos: npt.NDArray[np.float_]
     _xquat: npt.NDArray[np.float_]
     _qpos: npt.NDArray[np.float_]
@@ -42,6 +44,27 @@ class SimulationStateImpl(SimulationState):
         :param abstraction_to_mujoco_mapping: A mapping between simulation abstraction and mujoco.
         :param camera_views: The camera views.
         """
+        self._geometries = {
+            x: deepcopy(data.geom(x).xpos) for x in 
+            [
+                '//unnamed_geom_0', 'mbs1/mbs1_geom0', 'mbs1/mbs1_geom1', 
+                'mbs1/mbs1_geom2', 'mbs1/mbs1_geom3', 'mbs1/mbs1_link0_geom0', 
+                'mbs1/mbs1_link0_geom1', 'mbs1/mbs1_link0_geom2', 
+                'mbs1/mbs1_link0_geom3', 'mbs1/mbs1_link0_link1_geom0', 
+                'mbs1/mbs1_link0_link1_geom1', 'mbs1/mbs1_link0_link1_geom2', 
+                'mbs1/mbs1_link0_link1_geom3', 'mbs1/mbs1_link0_link1_geom4', 
+                'mbs1/mbs1_link0_link1_link1_geom0', 
+                'mbs1/mbs1_link0_link1_link1_geom1', 
+                'mbs1/mbs1_link0_link1_link1_geom2', 
+                'mbs1/mbs1_link0_link1_link2_geom0', 
+                'mbs1/mbs1_link0_link1_link2_geom1', 
+                'mbs1/mbs1_link0_link1_link2_geom2', 
+                'mbs1/mbs1_link1_geom0', 'mbs1/mbs1_link1_geom1',
+                'mbs1/mbs1_link1_geom2', 'mbs1/mbs1_link2_geom0', 
+                'mbs1/mbs1_link2_geom1', 'mbs1/mbs1_link2_geom2']
+        }
+
+        self._values = data.geom_xpos.tolist()
         self._xpos = data.xpos.copy()
         self._xquat = data.xquat.copy()
         self._qpos = data.qpos.copy()

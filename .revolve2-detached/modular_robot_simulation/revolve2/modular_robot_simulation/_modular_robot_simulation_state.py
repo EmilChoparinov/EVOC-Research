@@ -1,3 +1,4 @@
+import numpy as np
 from revolve2.modular_robot.body import Module
 from revolve2.simulation.scene import MultiBodySystem, Pose, SimulationState
 from revolve2.simulation.scene import MultiBodySystem, SimulationState, UUIDKey
@@ -58,6 +59,41 @@ class ModularRobotSimulationState:
         :returns: The absolute pose.
         :raises NotImplementedError: Always.
         """
+        # This selection is ORDERED such that it matches the _xpos array
+        geometry_selection =  [
+            self._simulation_state._geometries[geo_name]
+            for geo_name in
+            [ 
+            "mbs1/mbs1_geom0", # ORIGIN(?) can be anything that runs
+            "mbs1/mbs1_geom0", # ORIGIN(?) can be anything that runs
+            "mbs1/mbs1_geom0", # (2) Head
+            "mbs1/mbs1_link0_geom2", # (3) Middle
+            "mbs1/mbs1_link0_link1_geom2", # (4) Rear
+            "mbs1/mbs1_link0_link1_link2_geom2", # (5) Right Hind
+            "mbs1/mbs1_link0_link1_link1_geom2",  # (6) Left Hind 
+            "mbs1/mbs1_link1_geom2", # (7) Left Front
+            "mbs1/mbs1_link2_geom2", # (8) Right Front
+        ]]
+
+
+        # Encode the corrected rotated coordinates in a matrix. Suppose z,y 
+        # are flipped for LEFT HIND, then array would look like [0,2,1]
+        correction_matrix = np.array([
+            [0,1,2], # ORIGIN
+            [0,1,2], # ORIGIN
+            [0,1,2], # HEAD
+            [0,1,2], # MIDDLE
+            [0,1,2], # RIGHT FRONT
+            [0,1,2], # LEFT FRONT
+            [0,1,2], # REAR
+            [0,1,2], # RIGHT HIND (z -> x), (x -> y)
+            [0,1,2], # LEFT HIND (z -> x), (x -> y)
+        ])
+
+        true_xpos = np.array(
+            [point[correction] 
+            for point, correction in 
+            zip(geometry_selection, correction_matrix)])
 
         rigid_body = self._modular_robot_to_module_map.module_to_rigid_body[UUIDKey(module)]
         
@@ -66,7 +102,8 @@ class ModularRobotSimulationState:
         #        to blow up so YOU can fix it.
         rigid_body_idx = self._simulation_state._abstraction_to_mujoco_mapping.rigid_body[UUIDKey(rigid_body)]
 
+
         return Pose(
-            Vector3(self._simulation_state._xpos[rigid_body_idx.id]),
+            Vector3(true_xpos[rigid_body_idx.id]),
             Quaternion(self._simulation_state._xquat[rigid_body_idx.id])
         )

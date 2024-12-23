@@ -6,7 +6,7 @@ if [ -d ".venv" ]; then
     echo "Using $PWD/.venv/bin/activate"
 else
     echo "===== Creating a new virtual environment ====="
-    python3 -m venv .venv
+    python -m venv .venv
     source .venv/bin/activate
     echo "===== Made $PWD/.venv/bin/activate ====="
     echo "===== INSTALLING \`.mulitneat-detached\` ====="

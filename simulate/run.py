@@ -5,12 +5,12 @@ import argparse
 import glob
 import pandas as pd
 import os
-import multiprocessing # import to run in Mac
+# import multiprocessing # import to run in Mac
 from typing import NamedTuple
 import typedef
 
 from revolve2.experimentation.logging import setup_logging, logging
-multiprocessing.set_start_method('fork', force=True)
+# multiprocessing.set_start_method('fork', force=True)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--animal-data", type=str, help=".csv file containing animal data", required=True)

@@ -1,5 +1,0 @@
-python-socketio
-# TODO: Figure this out
-netifaces==0.10.6
-torch
-fastdtw

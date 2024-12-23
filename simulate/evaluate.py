@@ -6,6 +6,7 @@ import config
 
 import numpy as np
 import numpy.typing as npt
+
 from typedef import population, simulated_behavior, genotype
 
 def get_pose_x_delta(state0: ModularRobotSimulationState, stateN: ModularRobotSimulationState) -> float:
@@ -35,6 +36,7 @@ def evaluate(robots: list[ModularRobot], behaviors: list[simulated_behavior], st
         ) for robot, states in zip(robots, behaviors)
     ])
     # print("df_animal",df_animal)
+
     df_robot = size_scaling(translation_rotation(get_data_with_forward_center(robots, behaviors)))
     # Combination_fitnesses to get combined fitness, distance, and similarity
     combined_fitness, distance, animal_similarity= combination_fitnesses(distance_scores, df_robot, state)

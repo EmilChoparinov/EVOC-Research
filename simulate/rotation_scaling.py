@@ -18,7 +18,6 @@ import numpy.typing as npt
 from typing import List
 
 
-
 def get_data_with_forward_center(robots: List[ModularRobot], behaviors: List) -> pd.DataFrame:
     """
     Parameters:
@@ -68,9 +67,12 @@ def translation_rotation(df: pd.DataFrame) -> pd.DataFrame:
     # Extract relevant points directly from the DataFrame
     head_first_x = df['head_x'].iloc[0]
     head_first_y = df['head_y'].iloc[0]
+    middle_x = df['middle_x'].iloc[0]
+    middle_y = df['middle_y'].iloc[0]
     forward_first_x = df['forward_x'].iloc[0]
     forward_first_y = df['forward_y'].iloc[0]
-
+    center_first_x = df['center_x'].iloc[0]
+    center_first_y = df['center_y'].iloc[0]
     theta = (np.pi / 2) - np.arctan2(forward_first_y, forward_first_x)
 
     rotation_matrix = np.array([
@@ -105,7 +107,7 @@ def translation_rotation(df: pd.DataFrame) -> pd.DataFrame:
                     continue
 
                 # Translate the point by subtracting the head position
-                translated_point = point_value - np.array([head_first_x, head_first_y])
+                translated_point = point_value - np.array([middle_x, middle_y])
                 # Rotate the point using the rotation matrix
                 rotated_point = rotation_matrix @ translated_point
                 transformed_points[point_name] = f"({rotated_point[0]:.2f}, {rotated_point[1]:.2f})"
@@ -136,6 +138,57 @@ def fitness_standardization(fitnesses: npt.NDArray[np.float_]):
     standardized_fitness = (fitnesses - mean_f) / std_f
     return standardized_fitness
 
+def parse_tuple(value):
+    try:
+        # 尝试将字符串解析为数值元组
+        return np.array(ast.literal_eval(value)) if isinstance(value, str) else np.array(value)
+    except (ValueError, SyntaxError):
+        print(f"Error parsing value: {value}")
+        return np.array([np.nan, np.nan])
+
+
+def calculate_and_add_center(df):
+    """
+    计算中心点 (center-euclidian) 并添加到数据帧中。
+
+    Args:
+        df (pd.DataFrame): 包含关键点数据的输入数据帧。
+
+    Returns:
+        pd.DataFrame: 添加了 center-euclidian 列的新数据帧。
+    """
+    # 定义需要的关键点列
+    keypoints = ['head', 'middle', 'rear', 'right_front', 'left_front', 'right_hind', 'left_hind']
+
+    # 确保数据帧中包含所有关键点列ls
+
+    missing_columns = [col for col in keypoints if col not in df.columns]
+    if missing_columns:
+        raise ValueError(f"Missing columns: {', '.join(missing_columns)}")
+
+    def calculate_center(row):
+        """
+        计算当前行的中心点坐标。
+        """
+        points = []
+        for key in keypoints:
+            try:
+                point = parse_tuple(row[key])
+                if isinstance(point, (tuple, list, np.ndarray)) and not np.isnan(point).any():
+                    points.append(np.array(point))
+            except Exception as e:
+                print(f"Error parsing {key}: {e}")
+
+        # 如果找到有效的关键点，计算它们的平均值
+        if points:
+            center = np.mean(points, axis=0)
+            return f"({center[0]:.2f}, {center[1]:.2f})"
+        else:
+            return np.nan
+
+    # 应用到每一行，计算中心点
+    df['center-euclidian'] = df.apply(calculate_center, axis=1)
+    return df
 
 
 def size_scaling(df: pd.DataFrame) -> pd.DataFrame:
@@ -152,14 +205,17 @@ def size_scaling(df: pd.DataFrame) -> pd.DataFrame:
         elif isinstance(data_dict, pd.DataFrame) or isinstance(data_dict, pd.Series):
             keypoints = data_dict[['X (relative)', 'Y (relative)']].values.flatten()
 
-        return np.array(keypoints).flatten()  
+        return np.array(keypoints).flatten()
+
 
     global_max_distance_animal = 168.13387523042465
-    global_max_distances = {i: 0 for i in range(10)}  
+    global_max_distances = {i: 0 for i in range(10)}
+
     coordinates_2_list = []
 
     for index, frame in df.iterrows():
         coordinates_2 = {
+            'center':parse_tuple_string(frame['center']),
             'head': parse_tuple_string(frame.get('head', None)),
             'middle': parse_tuple_string(frame.get('middle', None)),
             'rear': parse_tuple_string(frame.get('rear', None)),
@@ -177,11 +233,11 @@ def size_scaling(df: pd.DataFrame) -> pd.DataFrame:
         robot_index = frame.get('robot_index', np.nan)
 
         if not np.isnan(robot_index):
-            robot_head = np.array(coordinates_2['head']).astype(float)
+            robot_center = np.array(coordinates_2['center']).astype(float)
             robot_boxes = np.array([coordinates_2[box_name] for box_name in
-                                    ['middle', 'rear', 'right_front', 'left_front', 'right_hind', 'left_hind']]).astype(
+                                    ['middle', 'rear','head', 'right_front', 'left_front', 'right_hind', 'left_hind']]).astype(
                 float)
-            robot_distances = np.linalg.norm(robot_boxes - robot_head, axis=1)
+            robot_distances = np.linalg.norm(robot_boxes - robot_center, axis=1)
             max_distance_robot = np.max(robot_distances)
 
             robot_index = int(robot_index)
@@ -189,29 +245,32 @@ def size_scaling(df: pd.DataFrame) -> pd.DataFrame:
                 global_max_distances[robot_index] = max_distance_robot
 
     print(f'Global maximum distances per robot_index: {global_max_distances}')
-
     scaled_robot_data = []
-    first_robot_head = np.array(coordinates_2_list[0]['head']).reshape(1, 2)
+
+    first_robot_middle = np.array(coordinates_2_list[0]['middle']).reshape(1, 2)
 
     for i in range(len(coordinates_2_list)):
         robot_coordinates = extract_keypoints(coordinates_2_list[i])
         robot_index = df.iloc[i].get('robot_index', np.nan)
-
-        max_distance_robot = global_max_distances.get(int(robot_index), 1)
+        #
+        # max_distance_robot = global_max_distances.get(int(robot_index), 1)
+        #
+        max_distance_robot = global_max_distances.get(1, 1)
         robot_coordinates = robot_coordinates.reshape(-1, 2)
-        scaled_robot_coordinates = (robot_coordinates - first_robot_head ) * (
-                global_max_distance_animal / max_distance_robot) + first_robot_head
+        scaled_robot_coordinates = (robot_coordinates - first_robot_middle ) * (
+                global_max_distance_animal / max_distance_robot) + first_robot_middle
 
         scaled_robot_data.append({
-            'head': tuple(scaled_robot_coordinates[0]),
+            # 'center':tuple(scaled_robot_coordinates[0]),
+            'head': tuple(scaled_robot_coordinates[1]),
             'Frame': i,
             'robot_index': robot_index,
-            'middle': tuple(scaled_robot_coordinates[1]),
-            'rear': tuple(scaled_robot_coordinates[2]),
-            'right_front': tuple(scaled_robot_coordinates[3]),
-            'left_front': tuple(scaled_robot_coordinates[4]),
-            'right_hind': tuple(scaled_robot_coordinates[5]),
-            'left_hind': tuple(scaled_robot_coordinates[6]),
+            'middle': tuple(scaled_robot_coordinates[2]),
+            'rear': tuple(scaled_robot_coordinates[3]),
+            'right_front': tuple(scaled_robot_coordinates[4]),
+            'left_front': tuple(scaled_robot_coordinates[5]),
+            'right_hind': tuple(scaled_robot_coordinates[6]),
+            'left_hind': tuple(scaled_robot_coordinates[7]),
         })
 
     scaled_robot_data = pd.DataFrame(scaled_robot_data)

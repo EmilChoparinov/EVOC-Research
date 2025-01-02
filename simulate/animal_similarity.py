@@ -49,17 +49,12 @@ def mse_similarity(robot_data: pd.DataFrame, animal_data: pd.DataFrame) -> float
     else:
         raise ValueError("Shape mismatch between robot and animal data, cannot calculate MSE.")
 
-
+#as a whole
 def dtw_similarity(robot_data: pd.DataFrame, animal_data: pd.DataFrame) -> float:
-    """
-    逐帧计算 DTW 相似度并求平均值。
-    """
+    # Ensure data shapes match before calculating DTW
     if robot_data.shape == animal_data.shape:
-        dtw_values = []
-        for i in range(robot_data.shape[0]):  # 遍历每一帧
-            distance, _ = fastdtw(robot_data.iloc[i], animal_data.iloc[i], dist=euclidean)
-            dtw_values.append(distance)
-        return np.mean(dtw_values)  # 返回平均 DTW
+        distance, path = fastdtw(robot_data, animal_data, dist=euclidean)
+        return distance
     else:
         raise ValueError("Shape mismatch between robot and animal data, cannot calculate DTW.")
 
@@ -96,13 +91,7 @@ def cos_similarity(robot_data: pd.DataFrame, animal_data: pd.DataFrame) -> float
 #         raise ValueError("Shape mismatch between robot and animal data, cannot calculate MSE.")
 #
 #
-# def dtw_similarity(robot_data: pd.DataFrame, animal_data: pd.DataFrame) -> float:
-#     # Ensure data shapes match before calculating DTW
-#     if robot_data.shape == animal_data.shape:
-#         distance, path = fastdtw(robot_data, animal_data, dist=euclidean)
-#         return distance
-#     else:
-#         raise ValueError("Shape mismatch between robot and animal data, cannot calculate DTW.")
+
 #
 #
 # def cos_similarity(robot_data: pd.DataFrame, animal_data: pd.DataFrame) -> float:

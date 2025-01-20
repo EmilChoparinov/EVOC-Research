@@ -1,4 +1,6 @@
 from revolve2.modular_robot import ModularRobot
+import ast
+from evaluate import approximate_front_coords
 from revolve2.modular_robot.brain.cpg import BrainCpgNetworkStatic
 
 from revolve2.modular_robot_simulation import ModularRobotScene, simulate_scenes
@@ -46,7 +48,6 @@ def export_ea_metadata(run_id: int = 0):
 
 
 from rotation_scaling import get_data_with_forward_center,translation_rotation
-
 
 # TODO: This function has been primed to be embarrassingly parallel if more performance required.
 
@@ -128,7 +129,7 @@ def process_ea_iteration(state: config.EAState):
         
         # Clean-up Step. Flush buffer to disk after every evaluation step
         logging.info(f"Recording best fit behavior to {behavior_csv}")
-        try:
+        try:    
             config.write_buffer.to_csv(behavior_csv, index=False, header=False, mode='a')
             config.write_buffer.drop(config.write_buffer.index, inplace=True)
         except Exception as e:

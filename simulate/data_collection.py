@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 import config
 import os
-
+from evaluate import approximate_front_coords
 from config import body_to_csv_map
 from typedef import simulated_behavior
 
@@ -38,6 +38,9 @@ def record_behavior(robot: ModularRobot, fitness: float, behavior: simulated_beh
                 case _:
                     abs_pose = pose_func(csv_map[col])
                     robot_coord_list.append((abs_pose.position.x, abs_pose.position.y))
+                    if col == 'left_front' or col == 'right_front':
+                        abs_pose.position.x *= 15/19
+                        abs_pose.position.y *= 15/19
                     return f"({abs_pose.position.x},{abs_pose.position.y})"
         
         # Collect the robots coordinates and put it in a dictionary that matches
@@ -102,6 +105,7 @@ def record_best_fitness_generation_csv(
                 for module_name in ["head", "middle", "rear", "right_front", "left_front", "right_hind", "left_hind"]
             }
             # print(module_coords)
+            factor = 15/19
             record = {
                 "generation_id": generation_id,
                 "fitness": fitness,
@@ -111,8 +115,8 @@ def record_best_fitness_generation_csv(
                 "head": f"({module_coords['head'].x:.2f},{module_coords['head'].y:.2f})",
                 "middle": f"({module_coords['middle'].x:.2f},{module_coords['middle'].y:.2f})",
                 "rear": f"({module_coords['rear'].x:.2f},{module_coords['rear'].y:.2f})",
-                "right_front": f"({module_coords['right_front'].x:.2f},{module_coords['right_front'].y:.2f})",
-                "left_front": f"({module_coords['left_front'].x:.2f},{module_coords['left_front'].y:.2f})",
+                "right_front": f"({(module_coords['right_front'].x * factor):.2f},{(module_coords['right_front'].y * factor):.2f})",
+                "left_front": f"({(module_coords['left_front'].x * factor):.2f},{(module_coords['left_front'].y * factor):.2f})",
                 "right_hind": f"({module_coords['right_hind'].x:.2f},{module_coords['right_hind'].y:.2f})",
                 "left_hind": f"({module_coords['left_hind'].x:.2f},{module_coords['left_hind'].y:.2f})"
             }

@@ -1,3 +1,5 @@
+import sys
+import pdb
 import ea
 import VAE
 import config
@@ -47,6 +49,13 @@ if args.cleanup:
     for file_path in glob.glob("*.csv") + glob.glob("*.txt"): os.remove(file_path)
 
 setup_logging(file_name=args.log, level=logging.INFO)
+
+
+def debug_on_exception(type, value, traceback):
+    print(f"Unhandled exception: {type.__name__}: {value}")
+    pdb.post_mortem(traceback)
+
+sys.excepthook = debug_on_exception
 
 def main():
     # Pass the arguments to ea.process_ea_iteration

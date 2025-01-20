@@ -19,6 +19,20 @@ def get_pose_x_delta(state0: ModularRobotSimulationState, stateN: ModularRobotSi
     return state0.get_pose().position.x - stateN.get_pose().position.x
 
 
+def approximate_front_coords(df_robot):
+    """
+    This pass scales the front legs to match the back legs. The front legs have
+    a distance of .19 meters in the simulation. The back legs have a distance of
+    .15 meters from center to limb in the simulation.
+    """
+    factor = 15/19 # Proportions stay constant! this is enough
+    def x(pos):
+        # print(pos)
+        return (pos[0] * factor, pos[1] * factor)
+
+    df_robot['right_front'] = df_robot['right_front'].apply(x)
+    df_robot['left_front'] = df_robot['left_front'].apply(x)
+
 def evaluate(robots: list[ModularRobot], behaviors: list[simulated_behavior], state: config.EAState) -> npt.NDArray[
     np.float_]:
     """
@@ -38,6 +52,9 @@ def evaluate(robots: list[ModularRobot], behaviors: list[simulated_behavior], st
     # print("df_animal",df_animal)
 
     df_robot = size_scaling(translation_rotation(get_data_with_forward_center(robots, behaviors)))
+    
+    approximate_front_coords(df_robot)
+
     # Combination_fitnesses to get combined fitness, distance, and similarity
     combined_fitness, distance, animal_similarity= combination_fitnesses(distance_scores, df_robot, state)
 

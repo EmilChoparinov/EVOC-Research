@@ -11,6 +11,7 @@ out/
 !requirements.txt
 *.pth
 *.mp4
+*.avi
 
 .swp
 

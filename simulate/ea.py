@@ -1,183 +1,136 @@
-from revolve2.modular_robot import ModularRobot
-import ast
-from evaluate import approximate_front_coords
-from revolve2.modular_robot.brain.cpg import BrainCpgNetworkStatic
-
+from collections import namedtuple
+from revolve2.standards import terrains
 from revolve2.modular_robot_simulation import ModularRobotScene, simulate_scenes
-from revolve2.standards.simulation_parameters import make_standard_batch_parameters
-from config import alpha
-import logging
+
+from revolve2.modular_robot import ModularRobot
+from revolve2.modular_robot.brain.cpg import BrainCpgNetworkStatic, CpgNetworkStructure
 import math
-import numpy as np
+from revolve2.experimentation.rng import seed_from_time
+from revolve2.modular_robot.body.base import ActiveHinge
+from revolve2.modular_robot.brain.cpg import active_hinges_to_cpg_network_structure_neighbor
+from revolve2.standards.modular_robots_v2 import gecko_v2
+from revolve2.modular_robot.body.v2 import BodyV2
+from revolve2.simulators.mujoco_simulator import LocalSimulator
+from revolve2.standards.simulation_parameters import make_standard_batch_parameters
 
-from VAE import plot_fitness,infer_on_csv,save_to_csv
-from typedef import simulated_behavior, genotype
-from data_collection import record_elite_generations,record_best_fitness_generation_csv
-from animal_similarity import create_simulation_video
-import data_collection
-import evaluate
-import config
-import csv
-import random
-import os
+import simulate.stypes as stypes
+import simulate.evaluate as evaluate
 import pandas as pd
+import simulate.data as data
+import logging
+import cma
 
-def export_ea_metadata(run_id: int = 0):
-    seed = config.random_seed if hasattr(config, 'random_seed') else random.randint(0, 1000000)
-    initial_mean = config.initial_mean if hasattr(config, 'initial_mean') else [0.0] * 9
-    initial_sigma = config.initial_sigma if hasattr(config, 'initial_sigma') else 0.5
-    bounds = config.bounds if hasattr(config, 'bounds') else (-2, 2)
+def file_idempotent(state: stypes.EAState) -> str:
+    return f"run-{state.run}-alpha-{state.alpha}-type-{state.similarity_type}.csv"
 
-    metadata_file = "ea-run-metadata.csv"
+def create_state(
+        generation: int, run: int, alpha: float,
+        similarity_type: stypes.similarity_type, animal_data: pd.DataFrame):
+    return stypes.EAState(
+        generation=generation, run=run, alpha=alpha,
+        similarity_type=similarity_type, animal_data=animal_data)
 
-    metadata = [
-        ["Run ID", run_id],
-        ["Seed", seed],
-        ["Initial Mean", initial_mean],
-        ["Initial Sigma", initial_sigma],
-        ["Bounds", bounds]
-    ]
+def create_config(
+        ttl: int, freq: int):
+    return stypes.EAConfig(ttl=ttl, freq=freq)
 
-    with open(metadata_file, mode='a', newline='') as file:
-        writer = csv.writer(file)
-        if file.tell() == 0:
-            writer.writerow(["Parameter", "Value"])
-        writer.writerows(metadata)
-
-    logging.info(f"Metadata for run {run_id} exported to {metadata_file}")
-
-
-from rotation_scaling import get_data_with_forward_center,translation_rotation
-
-# TODO: This function has been primed to be embarrassingly parallel if more performance required.
-
-def process_ea_iteration(state: config.EAState):
-    max_gen, \
-    max_runs, \
-    alpha, \
-    fitness_function,\
-    similarity_type,\
-    df_animal, _ = state
+def iterate(state: stypes.EAState, config: stypes.EAConfig):
     
-    alpha = alpha if alpha is not None else config.alpha
+    # Base case: no more runs needed
+    if state.run == 0: return
 
-    if(max_runs == 0): return
+    # Stack `runs` total of this function
+    iterate(state._replace(run=state.run - 1), config)
 
-    # record data
-    export_ea_metadata(max_runs)
+    # Define the shape we want to iterate on
+    body_shape = gecko_v2()
 
-    # Stack `max_run` times this function and save output
-    process_ea_iteration(state._replace(max_runs=max_runs - 1))
+    # Using the body, extract the generated CPG structure from Revolve alongside
+    # the mapping between hinges to neurons
+    cpg_struct, mapping = active_hinges_to_cpg_network_structure_neighbor(
+        body_shape.find_modules_of_type(ActiveHinge))
     
-    logging.info("Start CMA-ES Optimization")
-    
-    cma_es = config.generate_cma()
+    # Create an evolution strategy (CMA-ES)
+    cma_es_options = cma.CMAOptions()
+    cma_es_options.set("bounds", [-2, 2])
+    cma_es_options.set("seed", seed_from_time() % 2 ** 32)
 
-    distance_all=[]
-    animal_similarities_all=[]
-    fitnesses_all = []
-    
-    # Write the columns into the csv 
-    behavior_csv = config.generate_fittest_xy_csv(max_runs)
-    config.write_buffer.to_csv(behavior_csv, index=False)
+    cma_es = cma.CMAEvolutionStrategy(
+        cpg_struct.num_connections * [0.0], # initial CPG weights (all zero)
+        0.5, # initial STD
+        cma_es_options)
 
-    # EA Loop
-    for generation_i in range(max_gen):
+    logging.info(f"[iterate] starting run {state.run}")
+
+    # Perform one generation
+    for gen_i in range(state.generation):
         logging.info(
-            f"Performing Generation {generation_i + 1} / {max_gen}")
-
-        # Evaluation Step
-        solutions = cma_es.ask()
-
-        robots, behaviors = ea_simulate_step(solutions)
-        fitnesses,distance,animal_similarity= evaluate.evaluate(robots, behaviors, state)
-
-        distance_all.append(distance)
-        animal_similarities_all.append(animal_similarity)
-        fitnesses_all.append(fitnesses)
-
-
-        cma_es.tell(solutions, fitnesses)
-
-        # Find the most fit individual of this generation
-        best_robot, best_behavior, best_fitness = evaluate.find_most_fit(fitnesses, robots, behaviors)
-
-        # Data Collection Step
-        data_collection.record_behavior(
-            best_robot, best_fitness, best_behavior, generation_id=generation_i, alpha=alpha,
-            fitness_function=fitness_function)
-
-        data_collection.record_elite_generations(
-            run_id=max_runs, generation=generation_i, fitness=best_fitness, matrix=best_robot.brain._weight_matrix,
-            alpha=alpha, fitness_function=fitness_function)
-
-        record_best_fitness_generation_csv(max_runs,best_robot, best_fitness, best_behavior, generation_id=generation_i, alpha=alpha,
-            fitness_function=fitness_function,similarity_type=similarity_type)
-
-        # top 3 fitness and corresponding robots and weight matrices
-        top_3_indices = sorted(range(len(fitnesses)), key=lambda i: fitnesses[i], reverse=True)[:3]
-        top_3_list = [(robots[i], fitnesses[i], robots[i].brain._weight_matrix) for i in top_3_indices]
-
-        for i, (robot, fitness, weights_matrix) in enumerate(top_3_list):
-            record_elite_generations(run_id=max_runs, generation=generation_i, fitness=fitness, matrix=weights_matrix)
-
-        logging.info(f"{cma_es.result.xbest=}\n{cma_es.result.fbest=}")
-
-        # Record CPG configuration at the end of the EA run
-        if(generation_i + 1 == max_gen):
-            data_collection.record_cpg(best_robot, max_runs)
+            f"[iterate] Performing generation {gen_i + 1} / {state.generation}")
         
-        # Clean-up Step. Flush buffer to disk after every evaluation step
-        logging.info(f"Recording best fit behavior to {behavior_csv}")
-        try:    
-            config.write_buffer.to_csv(behavior_csv, index=False, header=False, mode='a')
-            config.write_buffer.drop(config.write_buffer.index, inplace=True)
-        except Exception as e:
-            logging.error(f"Error while writing to CSV: {e}")
-            raise
-    save_to_csv(max_runs,fitnesses_all,distance_all, animal_similarities_all,alpha,similarity_type)
+        # Collect this iterations solutions to test
+        solutions: list[stypes.solution] = cma_es.ask()
 
-    create_simulation_video(state)
-    # Do not need to flush the buffer at this step because it's always the
-    # last thing the loop does.
-    logging.info(f"EA Iteration {max_runs} complete")
-    
-def ea_simulate_step(solution_set: list[genotype]) -> tuple[list[ModularRobot], list[simulated_behavior]]:
-    """
-    Perform one simulation step in the EA. An item from `solution_set` is mapped
-    to a list of simulation states produced by the simulator. These states 
-    contain Pose data. 
+        # Send solution vector to simulation function and get the robot objects
+        # alongside the simulation result
+        robots, behaviors = simulate_solutions(solutions, 
+                                               cpg_struct,
+                                               body_shape, mapping,
+                                               config)
+        
+        # Convert behavior data into dataframes to make further processing
+        # easier
+        df_behaviors = data.behaviors_to_dataframes(robots, behaviors, state)
+        
+        # Evaluate and tell CMA-ES the scores of each solution
+        scores = evaluate.evaluate(df_behaviors, state)
+        cma_es.tell(solutions, scores)
 
-    Returns a list of the behaviors alongside the robots
-    """
-    # Construct the robots
+        best_score, best_df_behavior = evaluate\
+            .most_fit(scores, df_behaviors)
+
+        # Apply the remaining columns and append to CSV output
+        data.apply_statistics(best_df_behavior, best_score, state, gen_i)
+
+        # If first iteration, create the file. If other append
+        if gen_i == 0:
+            best_df_behavior.to_csv(file_idempotent(state), index=False)
+        else:
+            best_df_behavior.to_csv(file_idempotent(state), mode='a', index=False, header=False)
+
+        logging.info(f"[iterate] {gen_i} / {state.generation}\n{cma_es.result.xbest=}\n{cma_es.result.fbest=}")
+        
+
+    data.create_video_state(state)
+
+    logging.info(f"[iterate] EA Iteration {state.run} complete")
+
+
+def simulate_solutions(solution_set: list[stypes.solution], 
+                       cpg_struct: CpgNetworkStructure,
+                       body_shape: BodyV2, body_map: any,
+                       config: stypes.EAConfig):
     robots = [
         ModularRobot(
-            body=config.body_shape,
+            body=body_shape,
             brain=BrainCpgNetworkStatic.uniform_from_params(
                 params=solution,
-                cpg_network_structure=config.cpg_network_struct,
+                cpg_network_structure=cpg_struct,
                 initial_state_uniform=math.sqrt(2) * 0.5, 
-                output_mapping=config.output_mapping
-            )
-        )
-        for solution in solution_set
-    ]
-    
+                output_mapping=body_map))
+        for solution in solution_set]
+
     def new_robot_scene(robot: ModularRobot) -> ModularRobotScene:
-        s = ModularRobotScene(terrain=config.terrain)
+        s = ModularRobotScene(terrain=terrains.flat())
         s.add_robot(robot)
         return s
     
     scenes = [new_robot_scene(robot) for robot in robots]
-    
-    # Simulate all constructed scenes
-    return (robots, simulate_scenes(
-        simulator=config.simulator,
-        batch_parameters=make_standard_batch_parameters(
-            simulation_time=config.simulation_ttl,
-            sampling_frequency=config.collection_rate
-        ),
-        scenes=scenes
-    ))
+
+    return (robots, 
+            simulate_scenes(
+                simulator=LocalSimulator(headless=True, num_simulators=8),
+                batch_parameters=make_standard_batch_parameters(
+                    simulation_time=config.ttl,
+                    sampling_frequency=config.freq),
+                scenes=scenes))
     

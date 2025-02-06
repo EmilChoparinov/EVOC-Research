@@ -1,115 +1,118 @@
 from revolve2.modular_robot import ModularRobot
-from revolve2.modular_robot_simulation import ModularRobotSimulationState
-from animal_similarity import combination_fitnesses
-from rotation_scaling import size_scaling, translation_rotation, get_data_with_forward_center
-import config
-
+from scipy.spatial.distance import euclidean
+from fastdtw import fastdtw
+import simulate.data as data
+import ast
+import pandas as pd
 import numpy as np
 import numpy.typing as npt
+from revolve2.modular_robot_simulation import ModularRobotSimulationState
+import simulate.stypes as stypes
+from sklearn.metrics import mean_squared_error
+def mix_ab(a: float, b:float, alpha: float) -> float:
+    return alpha * a + (1 - alpha) * b
 
-from typedef import population, simulated_behavior, genotype
+def most_fit(scores: npt.NDArray[np.float_], 
+             df_behaviors: list[pd.DataFrame]):
+    best_score_idx, best_score = max(enumerate(scores), key=lambda x: x[1])
+    return (best_score, df_behaviors[best_score_idx])
 
-def get_pose_x_delta(state0: ModularRobotSimulationState, stateN: ModularRobotSimulationState) -> float:
-    """
-    Calculate the different between the starting position and the final position
- 
-    Note: Its subtracting to produce a negative value because the robot just
-          happend to spawn oriented towards the -x direction
-    """
-    return state0.get_pose().position.x - stateN.get_pose().position.x
+def evaluate_by_distance(behavior: pd.DataFrame) -> float:
+    return behavior.iloc[0]['head'][0] - behavior.iloc[-1]['head'][0]
 
-
-def approximate_front_coords(df_robot):
-    """
-    This pass scales the front legs to match the back legs. The front legs have
-    a distance of .19 meters in the simulation. The back legs have a distance of
-    .15 meters from center to limb in the simulation.
-    """
-    factor = 15/19 # Proportions stay constant! this is enough
-    def x(pos):
-        # print(pos)
-        return (pos[0] * factor, pos[1] * factor)
-
-    df_robot['right_front'] = df_robot['right_front'].apply(x)
-    df_robot['left_front'] = df_robot['left_front'].apply(x)
-
-def evaluate(robots: list[ModularRobot], behaviors: list[simulated_behavior], state: config.EAState) -> npt.NDArray[
-    np.float_]:
-    """
-    Perform combined evaluation over a list of robots.
-    Returns an array of ordered fitness values based on the combination of distance and similarity.
-    """
-    df_animal = state.animal_data
-    alpha = state.alpha
-    similarity_type = state.similarity_type
-    # Distance-based fitness
-    distance_scores = np.array([
-        get_pose_x_delta(
-            states[0].get_modular_robot_simulation_state(robot),
-            states[-1].get_modular_robot_simulation_state(robot)
-        ) for robot, states in zip(robots, behaviors)
-    ])
-    # print("df_animal",df_animal)
-
-    df_robot = size_scaling(translation_rotation(get_data_with_forward_center(robots, behaviors)))
+def evaluate_by_mse(behavior: pd.DataFrame, animal: pd.DataFrame):
+    # Apply MSE to column vector pairs, then take the average of all these pairs
+    def apply_mse(frame):
+        robot_frame = [frame[point] for point in data.point_definition]
+        animal_frame = [animal.loc[frame.name, point] for point in data.point_definition]
+        return mean_squared_error(robot_frame, animal_frame)
+    behavior["MSE"] = behavior.apply(apply_mse,axis=1)
     
-    approximate_front_coords(df_robot)
+    # Apply mean to the column
+    return np.mean(behavior["MSE"])
 
-    # Combination_fitnesses to get combined fitness, distance, and similarity
-    combined_fitness, distance, animal_similarity= combination_fitnesses(distance_scores, df_robot, state)
+def evaluate_by_dtw(behavior: pd.DataFrame, animal: pd.DataFrame):
+    # fastdtw library requires the points to be in a tuple of time series
+    def serialize(frame):
+        return [coord for point in 
+                [frame[point] for point in data.point_definition] for coord in point]
 
-    return combined_fitness,distance,animal_similarity
+    robot_timeseries = behavior.apply(serialize, axis=1).to_list()
+    animal_timeseries = animal.apply(serialize, axis=1).to_list()
+
+    # fastdtw library requires the time series to be of the same length
+    normal_len = min(len(robot_timeseries), len(animal_timeseries))
+    robot_timeseries = robot_timeseries[:normal_len]
+    animal_timeseries = animal_timeseries[:normal_len]
+
+    distance, _ = fastdtw(
+        robot_timeseries, animal_timeseries, dist=euclidean)
+
+    return distance
+
+def calculate_angle(p1,p2,p3):
+    p1 = np.array(p1)
+    p2 = np.array(p2)
+    p3 = np.array(p3)
+    
+    vec1 = p2 - p1
+    vec2 = p3 - p1
+
+    cos_theta = np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))
+    angle = np.arccos(np.clip(cos_theta, -1.0, 1.0))  # Clip to avoid numerical instability
+    return np.degrees(angle)
+
+def evaluate_by_angle(behavior: pd.DataFrame, animal_data: pd.DataFrame) -> float:
+    def calculate_angle_difference(frame):
+        robot_angle1 = calculate_angle(frame["right_front"], 
+                                       frame["left_hind"], 
+                                       frame["left_front"])
+        robot_angle2 = calculate_angle(frame["left_front"], 
+                                       frame["right_hind"], 
+                                       frame["right_front"])
+
+        animal_angle1 = calculate_angle(animal_data.loc[frame.name, "right_front"], 
+                                       animal_data.loc[frame.name, "left_hind"], 
+                                       animal_data.loc[frame.name, "left_front"])
+        animal_angle2 = calculate_angle(animal_data.loc[frame.name, "left_front"], 
+                                       animal_data.loc[frame.name, "right_hind"], 
+                                       animal_data.loc[frame.name, "right_front"])
+
+        diff1 = abs(robot_angle1 - animal_angle1)
+        diff2 = abs(robot_angle2 - animal_angle2)
+
+        return (diff1 + diff2) / 2
 
 
+    behavior["Angle_Diff"] = behavior.apply(calculate_angle_difference, axis=1)
 
-# def evaluate_distance(robots: list[ModularRobot], behaviors: list[simulated_behavior]) -> npt.NDArray[np.float_]:
-# #def evaluate(robots: list[ModularRobot], behaviors: list[simulated_behavior]) -> npt.NDArray[np.float_]:
-#     """
-#     Perform evaluation over a list of robots. The incoming data is **assumed**
-#     to be ordered. I.E. the first index in the modular robot list has its
-#     behavior recorded in the first index of the behavior list.
-#
-#     Returns an array of ordered fitness values.
-#     """
-#     return np.array([
-#         # Get delta from first state to last state in simulation
-#         get_pose_x_delta(
-#             states[0].get_modular_robot_simulation_state(robot),
-#             states[-1].get_modular_robot_simulation_state(robot)
-#         ) for robot, states in zip(robots, behaviors)
-#     ])
-#
-#
-# def evaluate_similarity(robots: list[ModularRobot], behaviors: list[simulated_behavior]) -> npt.NDArray[np.float_]:
-#     """
-#     Calculate the fitness based on the similarity to a dynamic ideal behavior.
-#     The ideal behavior is dynamically determined as an offset from the initial position.
-#     """
-#     offset_distance = 1.0  #
-#     similarity_scores = []
-#
-#     for robot, states in zip(robots, behaviors):
-#         # initial position
-#         start_position = states[0].get_modular_robot_simulation_state(robot).get_pose().position
-#         ideal_position = np.array([start_position.x + offset_distance, start_position.y, start_position.z])
-#
-#         end_position = states[-1].get_modular_robot_simulation_state(robot).get_pose().position
-#         end_position_array = np.array([end_position.x, end_position.y, end_position.z])
-#
-#         deviation = np.linalg.norm(end_position_array - ideal_position)
-#
-#         similarity_score = 1 / (1 + deviation)
-#         similarity_scores.append(similarity_score)
-#
-#     return np.array(similarity_scores)
+    return np.mean(behavior["Angle_Diff"])  # Return overall mean difference
 
-def find_most_fit(fitnesses: npt.NDArray[np.float_], robots: list[ModularRobot], behaviors: list[simulated_behavior]):
-    """
-    Perform linear search for the robot with the highest fitness. The incoming
-    parameters are **assumed** to be ordered.
+def evaluate(behaviors: list[pd.DataFrame],state: stypes.EAState):
+    distances = np.array([evaluate_by_distance(behavior) 
+                                for behavior in behaviors])
 
-    Returns tuple of best fitting robot with its behavior and fitness value
-    """
-    # Zip fitnesses with index, find the max fitness value and index 
-    fittest_idx, fitness = max(enumerate(fitnesses), key=lambda x: x[1])
-    return (robots[fittest_idx],behaviors[fittest_idx], fitness)
+    if state.similarity_type == "DTW":
+        return [mix_ab(
+                    distance, 
+                    data.value_rebound(
+                        evaluate_by_dtw(behavior, state.animal_data),
+                        (0, 100_000), (0, 2.5)) ,
+                    state.alpha) 
+                for behavior, distance in zip(behaviors, distances)]
+    
+    if state.similarity_type == "MSE":
+        return [mix_ab(
+                    distance,
+                    data.value_rebound(
+                        evaluate_by_mse(behavior, state.animal_data),
+                        (0, 30_000), (0, 2.5)), 
+                    state.alpha) 
+                for behavior, distance in zip(behaviors, distances)]
+
+    if state.similarity_type == "Angles":
+        return [mix_ab(
+                    distance, 
+                    evaluate_by_angle(behavior, state.animal_data),
+                    state.alpha) 
+                for behavior, distance in zip(behaviors, distances)]

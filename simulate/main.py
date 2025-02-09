@@ -45,12 +45,12 @@ args: Args = parser.parse_args()
 
 if not (0 <= args.alpha <= 1): raise ValueError("Alpha must be bounded [0,1]")
 
-setup_logging()
-
 if __name__ == '__main__':
-    ea.iterate(
-        ea.create_state(
+    state = ea.create_state(
             generation=args.gens, run=args.runs,
             alpha=args.alpha, 
-            animal_data=args.animal_data, similarity_type=args.similarity_type),
-        ea.create_config(ttl=30, freq=30))
+            animal_data=args.animal_data, similarity_type=args.similarity_type)
+    
+    setup_logging(file_name=f"{ea.file_idempotent(state)}.txt")
+    ea.iterate(state,
+               ea.create_config(ttl=30, freq=30))

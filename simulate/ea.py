@@ -20,9 +20,16 @@ import simulate.data as data
 import logging
 import cma
 
+# /\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\
+# /                 EA UTILITIES                 \
+# /\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\
 def file_idempotent(state: stypes.EAState) -> str:
     return f"run-{state.run}-alpha-{state.alpha}-type-{state.similarity_type}.csv"
 
+
+# /\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\
+# /           TUPLE CONSTRUCTORS                 \
+# /\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\
 def create_state(
         generation: int, run: int, alpha: float,
         similarity_type: stypes.similarity_type, animal_data: pd.DataFrame):
@@ -34,6 +41,9 @@ def create_config(
         ttl: int, freq: int):
     return stypes.EAConfig(ttl=ttl, freq=freq)
 
+# /\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\
+# /                  EA                          \
+# /\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\
 def iterate(state: stypes.EAState, config: stypes.EAConfig):
     
     # Base case: no more runs needed
@@ -46,13 +56,13 @@ def iterate(state: stypes.EAState, config: stypes.EAConfig):
     body_shape = gecko_v2()
 
     # Using the body, extract the generated CPG structure from Revolve alongside
-    # the mapping between hinges to neurons
+    # the mapping between hinge objects -> neurons
     cpg_struct, mapping = active_hinges_to_cpg_network_structure_neighbor(
         body_shape.find_modules_of_type(ActiveHinge))
     
     # Create an evolution strategy (CMA-ES)
     cma_es_options = cma.CMAOptions()
-    cma_es_options.set("bounds", [-2, 2])
+    cma_es_options.set("bounds", [-2.5, 2.5])
     cma_es_options.set("seed", seed_from_time() % 2 ** 32)
 
     cma_es = cma.CMAEvolutionStrategy(
@@ -85,30 +95,31 @@ def iterate(state: stypes.EAState, config: stypes.EAConfig):
         scores = evaluate.evaluate(df_behaviors, state)
         cma_es.tell(solutions, scores)
 
+        # Select the best score this iteration and append the data used to get
+        # the result into the dataframe
         best_score, best_df_behavior = evaluate\
             .most_fit(scores, df_behaviors)
-
-        # Apply the remaining columns and append to CSV output
         data.apply_statistics(best_df_behavior, best_score, state, gen_i)
 
-        # If first iteration, create the file. If other append
+        # Export the best this generation
+        logging.info(
+            f"[iterate] {gen_i} / {state.generation}\n{cma_es.result.xbest=}\n{cma_es.result.fbest=}")
         if gen_i == 0:
             best_df_behavior.to_csv(file_idempotent(state), index=False)
-        else:
-            best_df_behavior.to_csv(file_idempotent(state), mode='a', index=False, header=False)
+            continue
+        best_df_behavior.to_csv(file_idempotent(state), 
+                                mode='a', index=False, header=False)
 
-        logging.info(f"[iterate] {gen_i} / {state.generation}\n{cma_es.result.xbest=}\n{cma_es.result.fbest=}")
-        
-
+    # For convenience, we process the last generation into a video
     data.create_video_state(state)
-
     logging.info(f"[iterate] EA Iteration {state.run} complete")
-
 
 def simulate_solutions(solution_set: list[stypes.solution], 
                        cpg_struct: CpgNetworkStructure,
                        body_shape: BodyV2, body_map: any,
                        config: stypes.EAConfig):
+    
+    # Create a list of robots to simulate with uniform weights
     robots = [
         ModularRobot(
             body=body_shape,
@@ -124,8 +135,11 @@ def simulate_solutions(solution_set: list[stypes.solution],
         s.add_robot(robot)
         return s
     
+
     scenes = [new_robot_scene(robot) for robot in robots]
 
+    # This returns the robots that were used. This is a dependency for the 
+    # scene state object returned as the second value in this tuple.
     return (robots, 
             simulate_scenes(
                 simulator=LocalSimulator(headless=True, num_simulators=8),

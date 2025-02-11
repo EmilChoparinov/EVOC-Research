@@ -140,7 +140,7 @@ def evaluate(behaviors: list[pd.DataFrame],state: stypes.EAState):
             return [mix_ab(distance, 
                            data.value_rebound(
                                evaluate_by_dtw(behavior, state.animal_data),
-                               (0, 100_000), (0, 2.5)) ,
+                               (0, 100_000), (0, 2.5)),
                                state.alpha) 
                     for behavior, distance in zip(behaviors, distances)]            
         case "MSE":
@@ -148,11 +148,11 @@ def evaluate(behaviors: list[pd.DataFrame],state: stypes.EAState):
                            data.value_rebound(
                                evaluate_by_mse(behavior, state.animal_data),
                                (0, 30_000), (0, 2.5)),
-                               state.alpha) 
+                               state.alpha)
                     for behavior, distance in zip(behaviors, distances)]
         case "Angles":
-            return [mix_ab(distance, 
-                           evaluate_by_angle(behavior, state.animal_data),
+            return [mix_ab(distance / 2.5 , 
+                           evaluate_by_angle(behavior, state.animal_data) / 180,
                             # evaluate_by_angle_dtw(behavior, state.animal_data),
                            state.alpha)
                     for behavior, distance in zip(behaviors, distances)]

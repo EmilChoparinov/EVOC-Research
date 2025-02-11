@@ -29,15 +29,14 @@ def calculate_angle(p1,p2,p3):
     vec2 = P[2] - P[0]
 
     cos_theta = np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))
-    # angle = np.arccos(np.clip(cos_theta, -1.0, 1.0))  # Clip to avoid numerical instability
-    angle = np.arccos(cos_theta)  # Clip to avoid numerical instability
+    angle = np.arccos(np.clip(cos_theta, -1.0, 1.0))  # Clip to avoid numerical instability
     return np.degrees(angle)
 
 # /\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\
 # /               EVALUATORS                     \
 # /\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\
 def evaluate_by_distance(behavior: pd.DataFrame) -> float:
-    return behavior.iloc[0]['head'][0] - behavior.iloc[-1]['head'][0]
+    return -(behavior.iloc[0]['head'][1] - behavior.iloc[-1]['head'][1])
 
 def evaluate_by_mse(behavior: pd.DataFrame, animal: pd.DataFrame):
     # Apply MSE to column vector pairs, then take the average of all these pairs
@@ -104,6 +103,34 @@ def evaluate_by_angle(behavior: pd.DataFrame, animal_data: pd.DataFrame) -> floa
 
     return np.mean(behavior["Angle_Diff"])  # Return overall mean difference
 
+def evaluate_by_angle_dtw(behavior: pd.DataFrame, animal_data: pd.DataFrame) -> float:
+
+    min_len = min(len(behavior), len(animal_data))
+    behavior = behavior[:min_len]
+    animal_data = animal_data[:min_len]
+
+    angle1 = behavior.apply(lambda r: calculate_angle(
+        r["right_front"], r["left_hind"], r["left_front"]
+    ) ,axis=1).values
+
+    angle1_animal = animal_data.apply(lambda r: calculate_angle(
+        r["right_front"], r["left_hind"], r["left_front"]
+    ) ,axis=1).values
+
+    angle2 = behavior.apply(lambda r: calculate_angle(
+        r["left_front"], r["right_hind"], r["right_front"]
+    ) ,axis=1).values
+
+    angle2_animal = animal_data.apply(lambda r: calculate_angle(
+        r["left_front"], r["right_hind"], r["right_front"]
+    ) ,axis=1).values
+
+    distance, _ = fastdtw(
+        np.column_stack((angle1, angle2)), np.column_stack((angle1_animal, angle2_animal)))
+    
+    return distance
+
+
 def evaluate(behaviors: list[pd.DataFrame],state: stypes.EAState):
     distances = np.array([evaluate_by_distance(behavior) 
                                 for behavior in behaviors])
@@ -120,13 +147,14 @@ def evaluate(behaviors: list[pd.DataFrame],state: stypes.EAState):
             return [mix_ab(distance,
                            data.value_rebound(
                                evaluate_by_mse(behavior, state.animal_data),
-                               (0, 30_000), (0, 2.5)), 
+                               (0, 30_000), (0, 2.5)),
                                state.alpha) 
                     for behavior, distance in zip(behaviors, distances)]
         case "Angles":
             return [mix_ab(distance, 
                            evaluate_by_angle(behavior, state.animal_data),
-                           state.alpha) 
+                            # evaluate_by_angle_dtw(behavior, state.animal_data),
+                           state.alpha)
                     for behavior, distance in zip(behaviors, distances)]
         case _:
             raise NotImplementedError(

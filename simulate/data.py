@@ -98,21 +98,21 @@ def compute_scaling_factor(df_robot: pd.DataFrame, df_animal: pd.DataFrame):
     # I know the animal data has had some problems. So this is probably the best
     # approach even though there is low variance between the points and the 
     # center. The distribution should be somewhat uniform.
+    NR_OF_FRAMES = 30
+    robot_frames = [df_robot.iloc[i] for i in range (NR_OF_FRAMES)]
+    animal_frames = [df_animal.iloc[i] for i in range (NR_OF_FRAMES)]
 
-    robot_0 = df_robot.iloc[0]
-    animal_0 = df_animal.iloc[0]
+    S = 0
+    for i in range (NR_OF_FRAMES):
+        R = np.array([list(robot_frames[i][point]) for point in point_definition])
+        A = np.array([list(animal_frames[i][point]) for point in point_definition])
 
-    R = np.array([
-        list(robot_0[point]) for point in point_definition])
+        R_center = R - R.mean(axis=0)
+        A_center = A - A.mean(axis=0)
+
+        S += np.sqrt(np.sum(A_center**2) / np.sum(R_center**2))
     
-    A = np.array([
-        list(animal_0[point]) for point in point_definition])
-
-    R_center = R - R.mean(axis=0)
-    A_center = A - A.mean(axis=0)
-    
-    return np.sqrt(np.sum(A_center**2) / np.sum(R_center**2))
-
+    return S / NR_OF_FRAMES
 
 def apply_front_limb_heuristic(df: pd.DataFrame):
     # This is a bandaid for the robot we use literally not matching the animal.
@@ -183,7 +183,7 @@ def behaviors_to_dataframes(
                 .apply(lambda x: (x[0] * scale_factor, x[1] * scale_factor))
         
         # We also need to rotate the dataset so they walk the same direction
-        rotate_dataset(df, -90)
+        # rotate_dataset(df, -90)
 
         # The front limbs are misconfigured on the robot. We apply a heuristic 
         # s.t. the front and back are the same scale

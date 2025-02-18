@@ -92,7 +92,7 @@ def iterate(state: stypes.EAState, config: stypes.EAConfig):
         df_behaviors = data.behaviors_to_dataframes(robots, behaviors, state)
         
         # Evaluate and tell CMA-ES the scores of each solution
-        scores = evaluate.evaluate(df_behaviors, state)
+        scores = evaluate.evaluate(df_behaviors, state, gen_i)
         cma_es.tell(solutions, scores)
 
         # Select the best score this iteration and append the data used to get

@@ -36,7 +36,21 @@ def calculate_angle(p1,p2,p3):
 # /               EVALUATORS                     \
 # /\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\
 def evaluate_by_distance(behavior: pd.DataFrame) -> float:
-    return -(behavior.iloc[0]['head'][1] - behavior.iloc[-1]['head'][1])
+    total_x_move = (behavior.iloc[0]['head'][1] - behavior.iloc[-1]['head'][1])
+
+    dx = behavior['head'].apply(lambda x: x[0]) -\
+            behavior['rear'].apply(lambda x: x[0])
+    dy = behavior['head'].apply(lambda x: x[1]) -\
+            behavior['rear'].apply(lambda x: x[1])
+    
+    # Compute the cosine of the angle against axis
+    # We do fillna to handle division by zero if head and rear are the same
+    cos_theta = dx / ((dx ** 2 + dy ** 2) **0.5).fillna(0)
+    
+    # Only reward alignment towards the positive axis
+    avg_alignment = cos_theta.clip(lower=0).mean()
+    
+    return total_x_move * avg_alignment
 
 def evaluate_by_mse(behavior: pd.DataFrame, animal: pd.DataFrame):
     # Apply MSE to column vector pairs, then take the average of all these pairs
@@ -131,9 +145,10 @@ def evaluate_by_angle_dtw(behavior: pd.DataFrame, animal_data: pd.DataFrame) -> 
     return distance
 
 
-def evaluate(behaviors: list[pd.DataFrame],state: stypes.EAState):
+def evaluate(behaviors: list[pd.DataFrame],state: stypes.EAState, gen_i: int):
     distances = np.array([evaluate_by_distance(behavior) 
                                 for behavior in behaviors])
+    alpha = data.clamp(data.inverse_lerp(gen_i, 100, 250), 0, 0.5)
 
     match state.similarity_type:
         case "DTW":
@@ -141,20 +156,20 @@ def evaluate(behaviors: list[pd.DataFrame],state: stypes.EAState):
                            data.value_rebound(
                                evaluate_by_dtw(behavior, state.animal_data),
                                (0, 100_000), (0, 2.5)),
-                               state.alpha) 
+                               alpha) 
                     for behavior, distance in zip(behaviors, distances)]            
         case "MSE":
             return [mix_ab(distance,
                            data.value_rebound(
                                evaluate_by_mse(behavior, state.animal_data),
                                (0, 30_000), (0, 2.5)),
-                               state.alpha)
+                               alpha)
                     for behavior, distance in zip(behaviors, distances)]
         case "Angles":
-            return [mix_ab(distance / 2.5 , 
-                           evaluate_by_angle(behavior, state.animal_data) / 180,
+            return [mix_ab(distance,
+                           evaluate_by_angle(behavior, state.animal_data),
                             # evaluate_by_angle_dtw(behavior, state.animal_data),
-                           state.alpha)
+                           alpha)
                     for behavior, distance in zip(behaviors, distances)]
         case _:
             raise NotImplementedError(

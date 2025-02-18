@@ -62,6 +62,11 @@ def value_rebound(
     ratio = (value - start_bound[0]) / (start_bound[1] - start_bound[0])
     return end_bound[0] + ratio * (end_bound[1] - end_bound[0])
 
+def inverse_lerp(a, low, high):
+    assert(high - low != 0)
+    return (a - low) / (high - low)
+
+def clamp(n, smallest, largest): return max(smallest, min(n, largest))
 
 # /\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\
 # /             HEURISTICS                       \
@@ -183,7 +188,7 @@ def behaviors_to_dataframes(
                 .apply(lambda x: (x[0] * scale_factor, x[1] * scale_factor))
         
         # We also need to rotate the dataset so they walk the same direction
-        # rotate_dataset(df, -90)
+        rotate_dataset(df, -90)
 
         # The front limbs are misconfigured on the robot. We apply a heuristic 
         # s.t. the front and back are the same scale

@@ -16,8 +16,6 @@ SERVO_PIN = 31
 
 from dataclasses import dataclass
 
-from pyrr import Vector3
-
 from revolve2.modular_robot.body.v2 import ActiveHingeV2, BodyV2
 from revolve2.modular_robot import ModularRobot
 from revolve2.modular_robot.brain import Brain, BrainInstance

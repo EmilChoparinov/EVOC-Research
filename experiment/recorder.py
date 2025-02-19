@@ -1,41 +1,12 @@
 import argparse
 
-from revolve2.modular_robot.body import RightAngles
-from revolve2.modular_robot.body.v2 import ActiveHingeV2, BodyV2, BrickV2
 from revolve2.experimentation.logging import setup_logging
-from revolve2.experimentation.rng import make_rng_time_seed
-from revolve2.modular_robot import ModularRobot
-from revolve2.standards import terrains
-from revolve2.simulators.mujoco_simulator import LocalSimulator
-from revolve2.standards.simulation_parameters import make_standard_batch_parameters
-from revolve2.modular_robot_simulation import ModularRobotScene, simulate_scenes
-from revolve2.modular_robot import ModularRobot
-from revolve2.modular_robot.brain.cpg import active_hinges_to_cpg_network_structure_neighbor, BrainCpgNetworkNeighborRandom, CpgNetworkStructure, BrainCpgNetworkStatic
-from revolve2.standards.modular_robots_v2 import gecko_v2, snake_v2
-from revolve2.modular_robot.body.base import ActiveHinge
 from revolve2.experimentation.logging import setup_logging, logging
 
 import pandas as pd
-import threading
 import numpy as np
 import cv2
 
-from dataclasses import dataclass
-from typing import Literal
-
-from pyrr import Vector3
-
-from revolve2.modular_robot.body.v2 import ActiveHingeV2, BodyV2
-from revolve2.standards.modular_robots_v2 import gecko_v2
-from revolve2.modular_robot import ModularRobot
-from revolve2.modular_robot.brain import Brain, BrainInstance
-from revolve2.modular_robot.body.sensors import CameraSensor
-from revolve2.modular_robot.sensor_state import ModularRobotSensorState
-from revolve2.modular_robot import ModularRobot, ModularRobotControlInterface
-from revolve2.modular_robot_physical import Config, UUIDKey
-from revolve2.modular_robot_physical.remote import run_remote
-
-from experiment.revolve_layer import remote_control_with_polling_rate
 from simulate.config import PhysMap, cameras
 
 import numpy as np

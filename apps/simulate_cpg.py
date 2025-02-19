@@ -46,13 +46,13 @@ body = gecko_v2()
 
 PARAMS = np.array(
     # CPG to test goes here!
-       [ 1.23161961, -2.33705436,  2.3131178 ,  2.00714069,  0.14796365,
-       -2.35892791,  2.33346417,  0.28473802, -1.77773815]
+[-1.19600705, -2.14603341,  0.22867421,  1.21253405, -0.54340818,
+        1.08023934,  1.88329332,  0.07669044,  0.64563177]
        )
 
 # This value scales the time axis of the CPG generator. 1.5 means play 50% 
 # faster. Ideally, this should scale the CPG back to the animals walking speed
-PLAY_SPEED = 1.5
+PLAY_SPEED = 2
 
 active_hinges = body.find_modules_of_type(ActiveHinge)
 

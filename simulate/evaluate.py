@@ -1,4 +1,5 @@
 from revolve2.modular_robot import ModularRobot
+import logging
 from scipy.spatial.distance import euclidean
 from fastdtw import fastdtw
 import simulate.data as data
@@ -36,7 +37,10 @@ def calculate_angle(p1,p2,p3):
 # /               EVALUATORS                     \
 # /\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\
 def evaluate_by_distance(behavior: pd.DataFrame) -> float:
-    total_x_move = (behavior.iloc[0]['head'][1] - behavior.iloc[-1]['head'][1])
+    # We only reward if the direction is following the correct axis
+    total_move = max(
+        (behavior.iloc[-1]['head'][1] - behavior.iloc[0]['head'][1]),
+        0)
 
     dx = behavior['head'].apply(lambda x: x[0]) -\
             behavior['rear'].apply(lambda x: x[0])
@@ -45,12 +49,16 @@ def evaluate_by_distance(behavior: pd.DataFrame) -> float:
     
     # Compute the cosine of the angle against axis
     # We do fillna to handle division by zero if head and rear are the same
-    cos_theta = dx / ((dx ** 2 + dy ** 2) **0.5).fillna(0)
+    # dy / magnitude. We do dy because dataset is rotated by 90 degrees upon 
+    # leaving the simulation. Inside the simulation (dx,dy) -> (dy,dx) 
+    cos_theta = dy / ((dx ** 2 + dy ** 2) ** 0.5).fillna(0)
     
-    # Only reward alignment towards the positive axis
+    # Only reward alignment towards the positive y-axis
     avg_alignment = cos_theta.clip(lower=0).mean()
     
-    return total_x_move * avg_alignment
+    # CMA-ES expects a minimizing value. Since this is distance fitness, we must
+    # reverse our score
+    return -(total_move * avg_alignment)
 
 def evaluate_by_mse(behavior: pd.DataFrame, animal: pd.DataFrame):
     # Apply MSE to column vector pairs, then take the average of all these pairs
@@ -118,7 +126,6 @@ def evaluate_by_angle(behavior: pd.DataFrame, animal_data: pd.DataFrame) -> floa
     return np.mean(behavior["Angle_Diff"])  # Return overall mean difference
 
 def evaluate_by_angle_dtw(behavior: pd.DataFrame, animal_data: pd.DataFrame) -> float:
-
     min_len = min(len(behavior), len(animal_data))
     behavior = behavior[:min_len]
     animal_data = animal_data[:min_len]
@@ -148,7 +155,8 @@ def evaluate_by_angle_dtw(behavior: pd.DataFrame, animal_data: pd.DataFrame) -> 
 def evaluate(behaviors: list[pd.DataFrame],state: stypes.EAState, gen_i: int):
     distances = np.array([evaluate_by_distance(behavior) 
                                 for behavior in behaviors])
-    alpha = data.clamp(data.inverse_lerp(gen_i, 100, 250), 0, 0.5)
+
+    alpha = data.clamp(data.inverse_lerp(gen_i, 100, 200), 0, 0.75)
 
     match state.similarity_type:
         case "DTW":
@@ -166,8 +174,8 @@ def evaluate(behaviors: list[pd.DataFrame],state: stypes.EAState, gen_i: int):
                                alpha)
                     for behavior, distance in zip(behaviors, distances)]
         case "Angles":
-            return [mix_ab(distance,
-                           evaluate_by_angle(behavior, state.animal_data),
+            return [mix_ab(distance / 2.5,
+                           evaluate_by_angle(behavior, state.animal_data) / 180,
                             # evaluate_by_angle_dtw(behavior, state.animal_data),
                            alpha)
                     for behavior, distance in zip(behaviors, distances)]

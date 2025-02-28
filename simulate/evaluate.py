@@ -76,23 +76,26 @@ def evaluate_by_dtw(behavior: pd.DataFrame, animal: pd.DataFrame):
 
     return distance
 
-def evaluate_by_angle(behavior: pd.DataFrame, animal_data: pd.DataFrame) -> float:
+def evaluate_by_2_angles(behavior: pd.DataFrame, animal_data: pd.DataFrame) -> float:
     # TODO: Move the angle information into tuples into the data section alongside
     #       everything else similar to this
     def calculate_angle_difference(frame):
-        robot_angle1 = calculate_angle(frame["right_front"], 
-                                       frame["left_hind"], 
-                                       frame["left_front"])
-        robot_angle2 = calculate_angle(frame["left_front"], 
-                                       frame["right_hind"], 
-                                       frame["right_front"])
+        robot_r_f = frame["right_front"]
+        robot_r_h = frame["right_hind"]
+        robot_l_f = frame["left_front"]
+        robot_l_h = frame["left_hind"]
 
-        animal_angle1 = calculate_angle(animal_data.loc[frame.name, "right_front"],
-                                       animal_data.loc[frame.name, "left_hind"],
-                                       animal_data.loc[frame.name, "left_front"])
-        animal_angle2 = calculate_angle(animal_data.loc[frame.name, "left_front"], 
-                                       animal_data.loc[frame.name, "right_hind"], 
-                                       animal_data.loc[frame.name, "right_front"])
+        animal_r_f = animal_data.loc[frame.name, "right_front"]
+        animal_r_h = animal_data.loc[frame.name, "right_hind"]
+        animal_l_f = animal_data.loc[frame.name, "left_front"]
+        animal_l_h = animal_data.loc[frame.name, "left_hind"]
+
+
+        robot_angle1 = calculate_angle(robot_r_f, robot_l_h, robot_l_f)
+        animal_angle1 = calculate_angle(animal_r_f, animal_l_h, animal_l_f)
+
+        robot_angle2 = calculate_angle(robot_l_f, robot_r_h, robot_r_f)
+        animal_angle2 = calculate_angle(animal_l_f, animal_r_h, animal_r_f)
 
         diff1 = abs(robot_angle1 - animal_angle1)
         diff2 = abs(robot_angle2 - animal_angle2)
@@ -102,6 +105,45 @@ def evaluate_by_angle(behavior: pd.DataFrame, animal_data: pd.DataFrame) -> floa
     behavior["Angle_Diff"] = behavior.apply(calculate_angle_difference, axis=1)
 
     return np.mean(behavior["Angle_Diff"])
+
+def evaluate_by_4_angles(behavior: pd.DataFrame, animal_data: pd.DataFrame) -> float:
+    def calculate_angle_difference(frame):
+        robot_r_f = frame["right_front"]
+        robot_r_h = frame["right_hind"]
+        robot_l_f = frame["left_front"]
+        robot_l_h = frame["left_hind"]
+
+        animal_r_f = animal_data.loc[frame.name, "right_front"]
+        animal_r_h = animal_data.loc[frame.name, "right_hind"]
+        animal_l_f = animal_data.loc[frame.name, "left_front"]
+        animal_l_h = animal_data.loc[frame.name, "left_hind"]
+
+        robot_angles = []
+        animal_angles = []
+
+        robot_angles.append(calculate_angle(robot_r_f, robot_l_h, robot_l_f))
+        animal_angles.append(calculate_angle(animal_r_f, animal_l_h, animal_l_f))
+
+        robot_angles.append(calculate_angle(robot_l_f, robot_r_h, robot_r_f))
+        animal_angles.append(calculate_angle(animal_l_f, animal_r_h, animal_r_f))
+
+        robot_angles.append(calculate_angle(robot_r_h, robot_l_f, robot_l_h))
+        animal_angles.append(calculate_angle(animal_r_h, animal_l_f, animal_l_h))
+
+        robot_angles.append(calculate_angle(robot_l_h, robot_r_f, robot_r_h))
+        animal_angles.append(calculate_angle(animal_l_h, animal_r_f, animal_r_h))
+
+        s = 0; N = 4
+        for i in range(N):
+            s += abs(robot_angles[i] - animal_angles[i])
+            # s += (robot_angles[i] - animal_angles[i]) * (robot_angles[i] - animal_angles[i]) # MSE
+
+        return s / N
+
+    behavior["Angle_Diff"] = behavior.apply(calculate_angle_difference, axis=1)
+
+    return np.mean(behavior["Angle_Diff"])
+
 
 def evaluate_all_angles(behavior: pd.DataFrame, animal_data: pd.DataFrame) -> float:
     def calculate_angles_difference(frame):
@@ -183,10 +225,16 @@ def evaluate(behaviors: list[pd.DataFrame],state: stypes.EAState):
                                (0, 30_000), (0, 2.5)),
                                alpha)
                     for behavior, distance in zip(behaviors, distances)]
-        case "Angles":
+        case "2_Angles":
             return [mix_ab(1 + distance / 500,
-                           evaluate_by_angle(behavior, state.animal_data) / 360,
-                            # evaluate_by_angle_dtw(behavior, state.animal_data),
+                           evaluate_by_2_angles(behavior, state.animal_data) / 360,
+                           # evaluate_by_angle_dtw(behavior, state.animal_data),
+                           alpha)
+                    for behavior, distance in zip(behaviors, distances)]
+        case "4_Angles":
+            return [mix_ab(1 + distance / 500,
+                           evaluate_by_4_angles(behavior, state.animal_data) / 360,
+                           # evaluate_by_angle_dtw(behavior, state.animal_data),
                            alpha)
                     for behavior, distance in zip(behaviors, distances)]
         case "All_Angles":

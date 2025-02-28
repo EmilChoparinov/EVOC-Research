@@ -23,42 +23,24 @@ def most_fit(scores: npt.NDArray[np.float_],
     return (best_score, df_behaviors[best_score_idx])
 
 
-def calculate_angle(p1,p2,p3):
+def calculate_angle(p1, p2, p3):
     P = np.array([p1, p2, p3])
-    
-    vec1 = P[1] - P[0]
-    vec2 = P[2] - P[0]
 
-    cos_theta = np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))
-    angle = np.arccos(np.clip(cos_theta, -1.0, 1.0))  # Clip to avoid numerical instability
-    return np.degrees(angle)
+    vec1 = P[0] - P[1]
+    vec2 = P[2] - P[1]
+
+    angle1 = np.arctan2(vec1[1], vec1[0])
+    angle2 = np.arctan2(vec2[1], vec2[0])
+
+    angle = np.degrees(abs(angle2 - angle1))
+
+    return angle
 
 # /\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\
 # /               EVALUATORS                     \
 # /\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\
 def evaluate_by_distance(behavior: pd.DataFrame) -> float:
-    # We only reward if the direction is following the correct axis
-    total_move = max(
-        (behavior.iloc[-1]['head'][1] - behavior.iloc[0]['head'][1]),
-        0)
-
-    dx = behavior['head'].apply(lambda x: x[0]) -\
-            behavior['rear'].apply(lambda x: x[0])
-    dy = behavior['head'].apply(lambda x: x[1]) -\
-            behavior['rear'].apply(lambda x: x[1])
-    
-    # Compute the cosine of the angle against axis
-    # We do fillna to handle division by zero if head and rear are the same
-    # dy / magnitude. We do dy because dataset is rotated by 90 degrees upon 
-    # leaving the simulation. Inside the simulation (dx,dy) -> (dy,dx) 
-    cos_theta = dy / ((dx ** 2 + dy ** 2) ** 0.5).fillna(0)
-    
-    # Only reward alignment towards the positive y-axis
-    avg_alignment = cos_theta.clip(lower=0).mean()
-    
-    # CMA-ES expects a minimizing value. Since this is distance fitness, we must
-    # reverse our score
-    return -(total_move * avg_alignment)
+    return -max(behavior.iloc[-1]['head'][1] - behavior.iloc[0]['head'][1], 0)
 
 def evaluate_by_mse(behavior: pd.DataFrame, animal: pd.DataFrame):
     # Apply MSE to column vector pairs, then take the average of all these pairs
@@ -112,10 +94,6 @@ def evaluate_by_angle(behavior: pd.DataFrame, animal_data: pd.DataFrame) -> floa
                                        animal_data.loc[frame.name, "right_hind"], 
                                        animal_data.loc[frame.name, "right_front"])
 
-        # NOTE: These angles were calculated with the vector pair method!. The
-        #       angles are bounded to be between [0,180]. Therefore, it is
-        #       unnecessary to account for wrapping angle values
-        #       (s.t 350 and 10 = 20 degrees)
         diff1 = abs(robot_angle1 - animal_angle1)
         diff2 = abs(robot_angle2 - animal_angle2)
 
@@ -123,7 +101,39 @@ def evaluate_by_angle(behavior: pd.DataFrame, animal_data: pd.DataFrame) -> floa
 
     behavior["Angle_Diff"] = behavior.apply(calculate_angle_difference, axis=1)
 
-    return np.mean(behavior["Angle_Diff"])  # Return overall mean difference
+    return np.mean(behavior["Angle_Diff"])
+
+def evaluate_all_angles(behavior: pd.DataFrame, animal_data: pd.DataFrame) -> float:
+    def calculate_angles_difference(frame):
+        robot_angles = []
+        animal_angles = []
+        for i in range(5):
+            for j in range(i + 1, 6):
+                for k in range(j + 1, 7):
+                    robot_angles.append(calculate_angle(frame[data.point_definition[i]], frame[data.point_definition[j]],
+                                                        frame[data.point_definition[k]]))
+                    robot_angles.append(calculate_angle(frame[data.point_definition[i]], frame[data.point_definition[k]],
+                                                        frame[data.point_definition[j]]))
+                    robot_angles.append(calculate_angle(frame[data.point_definition[j]], frame[data.point_definition[i]],
+                                                        frame[data.point_definition[k]]))
+
+                    animal_angles.append(calculate_angle(animal_data.loc[frame.name, data.point_definition[i]],
+                                                         animal_data.loc[frame.name, data.point_definition[j]],
+                                                         animal_data.loc[frame.name, data.point_definition[k]]))
+                    animal_angles.append(calculate_angle(animal_data.loc[frame.name, data.point_definition[i]],
+                                                         animal_data.loc[frame.name, data.point_definition[k]],
+                                                         animal_data.loc[frame.name, data.point_definition[j]]))
+                    animal_angles.append(calculate_angle(animal_data.loc[frame.name, data.point_definition[j]],
+                                                         animal_data.loc[frame.name, data.point_definition[i]],
+                                                         animal_data.loc[frame.name, data.point_definition[k]]))
+        s = 0
+        for i in range(len(robot_angles)):
+            s += abs(robot_angles[i] - animal_angles[i])
+
+        return s / len(robot_angles)
+
+    behavior["Angle_Diff"] = behavior.apply(calculate_angles_difference, axis=1)
+    return np.mean(behavior["Angle_Diff"])
 
 def evaluate_by_angle_dtw(behavior: pd.DataFrame, animal_data: pd.DataFrame) -> float:
     min_len = min(len(behavior), len(animal_data))
@@ -152,11 +162,11 @@ def evaluate_by_angle_dtw(behavior: pd.DataFrame, animal_data: pd.DataFrame) -> 
     return distance
 
 
-def evaluate(behaviors: list[pd.DataFrame],state: stypes.EAState, gen_i: int):
+def evaluate(behaviors: list[pd.DataFrame],state: stypes.EAState):
     distances = np.array([evaluate_by_distance(behavior) 
                                 for behavior in behaviors])
 
-    alpha = data.clamp(data.inverse_lerp(gen_i, 100, 200), 0, 0.75)
+    alpha = state.alpha
 
     match state.similarity_type:
         case "DTW":
@@ -174,8 +184,14 @@ def evaluate(behaviors: list[pd.DataFrame],state: stypes.EAState, gen_i: int):
                                alpha)
                     for behavior, distance in zip(behaviors, distances)]
         case "Angles":
-            return [mix_ab(distance / 2.5,
-                           evaluate_by_angle(behavior, state.animal_data) / 180,
+            return [mix_ab(1 + distance / 500,
+                           evaluate_by_angle(behavior, state.animal_data) / 360,
+                            # evaluate_by_angle_dtw(behavior, state.animal_data),
+                           alpha)
+                    for behavior, distance in zip(behaviors, distances)]
+        case "All_Angles":
+            return [mix_ab(1 + distance / 500,
+                           evaluate_all_angles(behavior, state.animal_data) / 360,
                             # evaluate_by_angle_dtw(behavior, state.animal_data),
                            alpha)
                     for behavior, distance in zip(behaviors, distances)]

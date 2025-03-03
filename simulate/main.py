@@ -18,7 +18,7 @@ parser.add_argument(
     required=True, help="Alpha value between 0 and 1.")
 
 parser.add_argument(
-    "--similarity-type", type=str, required=True,choices=["DTW", "MSE", "Angles"], 
+    "--similarity-type", type=str, required=True,choices=list(stypes.similarity_type.__args__), 
     help="Specify the fitness function for EA.")
 
 parser.add_argument(

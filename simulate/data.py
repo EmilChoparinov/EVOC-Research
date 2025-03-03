@@ -197,9 +197,8 @@ def behaviors_to_dataframes(
 
     return list(map(to_df, zip(robots, behaviors)))
 
-def apply_statistics(df_behavior: pd.DataFrame, score: float, state: stypes.EAState, gen_i: int):
+def apply_statistics(df_behavior: pd.DataFrame, scores: dict[str, list[float]], state: stypes.EAState, gen_i: int):
     df_behavior['generation'] = gen_i
-    df_behavior['score'] = score
     df_behavior['similarity_type'] = state.similarity_type
 
     # Calculate the sum of all points into `center_euclidian`
@@ -213,6 +212,9 @@ def apply_statistics(df_behavior: pd.DataFrame, score: float, state: stypes.EASt
     df_behavior['center_euclidian'] = df_behavior["center_euclidian"].\
         apply(lambda x: 
               (x[0]/ len(point_definition), x[1] / len(point_definition)))
+    
+    for type, score in scores.items():
+        df_behavior[type] = score
 
 def create_video_state(state: stypes.EAState):
     frame_height = 720

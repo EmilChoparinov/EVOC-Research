@@ -93,13 +93,14 @@ def iterate(state: stypes.EAState, config: stypes.EAConfig):
         
         # Evaluate and tell CMA-ES the scores of each solution
         scores = evaluate.evaluate(df_behaviors, state, gen_i)
-        cma_es.tell(solutions, scores)
+        ab_scores = scores['data_ab']
+        cma_es.tell(solutions, ab_scores)
 
         # Select the best score this iteration and append the data used to get
         # the result into the dataframe
-        best_score, best_df_behavior = evaluate\
+        best_scores, best_df_behavior = evaluate\
             .most_fit(scores, df_behaviors)
-        data.apply_statistics(best_df_behavior, best_score, state, gen_i)
+        data.apply_statistics(best_df_behavior, best_scores, state, gen_i)
 
         # Export the best this generation
         logging.info(

@@ -17,11 +17,13 @@ from sklearn.metrics import mean_squared_error
 def mix_ab(a: float, b:float, alpha: float) -> float:
     return alpha * a + (1 - alpha) * b
 
-def most_fit(scores: npt.NDArray[np.float_], 
+def most_fit(scores: dict[str, npt.NDArray[np.float_]], 
              df_behaviors: list[pd.DataFrame]):
-    best_score_idx, best_score = max(enumerate(scores), key=lambda x: x[1])
-    return (best_score, df_behaviors[best_score_idx])
+    ab_scores = scores['data_ab']
+    best_score_idx, best_score = max(enumerate(ab_scores), key=lambda x: x[1])
 
+    return ({data_line: evals[best_score_idx] 
+             for data_line,evals in scores.items()}, df_behaviors[best_score_idx])
 
 def calculate_angle(p1, p2, p3):
     P = np.array([p1, p2, p3])
@@ -79,6 +81,7 @@ def evaluate_by_dtw(behavior: pd.DataFrame, animal: pd.DataFrame):
 def evaluate_by_2_angles(behavior: pd.DataFrame, animal_data: pd.DataFrame) -> float:
     # TODO: Move the angle information into tuples into the data section alongside
     #       everything else similar to this
+    # TODO: Make MSE version using angle information
     def calculate_angle_difference(frame):
         robot_r_f = frame["right_front"]
         robot_r_h = frame["right_hind"]
@@ -204,21 +207,24 @@ def evaluate_by_angle_dtw(behavior: pd.DataFrame, animal_data: pd.DataFrame) -> 
     return distance
 
 
-def evaluate(behaviors: list[pd.DataFrame],state: stypes.EAState):
-    distances = np.array([evaluate_by_distance(behavior) 
+def evaluate(behaviors: list[pd.DataFrame],state: stypes.EAState, gen_i: int):
+    distance_scores = np.array([evaluate_by_distance(behavior) 
                                 for behavior in behaviors])
 
-    alpha = state.alpha
+    # alpha = data.clamp(data.inverse_lerp(gen_i, 100, 200), 0, 0.75)
+    def ab_mixer(xs,ys): return [mix_ab(x,y,state.alpha) for x,y in zip(xs, ys)]
 
     match state.similarity_type:
         case "DTW":
-            return [mix_ab(distance, 
-                           data.value_rebound(
-                               evaluate_by_dtw(behavior, state.animal_data),
-                               (0, 100_000), (0, 2.5)),
-                               alpha) 
-                    for behavior, distance in zip(behaviors, distances)]            
+            dtw_scores = [evaluate_by_dtw(behavior, state.animal_data)
+                          for behavior in behaviors]
+            
+            return {'data_distance': distance_scores,
+                    'data_ab': ab_mixer(distance_scores, dtw_scores),
+                    'data_dtw': dtw_scores}
+        
         case "MSE":
+<<<<<<< HEAD
             return [mix_ab(distance,
                            data.value_rebound(
                                evaluate_by_mse(behavior, state.animal_data),
@@ -237,12 +243,32 @@ def evaluate(behaviors: list[pd.DataFrame],state: stypes.EAState):
                            # evaluate_by_angle_dtw(behavior, state.animal_data),
                            alpha)
                     for behavior, distance in zip(behaviors, distances)]
+=======
+            mse_scores = [evaluate_by_mse(behavior, state.animal_data)
+                          for behavior in behaviors]
+            return {'data_distance': distance_scores,
+                    'data_ab': ab_mixer(distance_scores, dtw_scores),
+                    'data_mse': mse_scores}
+        
+        case "Angles":
+            angle_scores = [evaluate_by_angle(behavior, state.animal_data) 
+                            for behavior in behaviors]
+            return {'data_distance': distance_scores,
+                    'data_ab': ab_mixer(
+                        [(d + 250)/250 for d in distance_scores], 
+                        [a/180 for a in angle_scores]),
+                    'data_angle': angle_scores}
+
+>>>>>>> 9483281 (merge complete)
         case "All_Angles":
-            return [mix_ab(1 + distance / 500,
-                           evaluate_all_angles(behavior, state.animal_data) / 360,
-                            # evaluate_by_angle_dtw(behavior, state.animal_data),
-                           alpha)
-                    for behavior, distance in zip(behaviors, distances)]
+            angle_scores = [evaluate_all_angles(behavior, state.animal_data)
+                            for behavior in behaviors]
+            return {'data_distance': distance_scores,
+                    'data_ab': ab_mixer(
+                                    [(d + 500)/500 for d in distance_scores], 
+                                    [a/360 for a in angle_scores]),
+                    'data_angle': angle_scores}
+        
         case _:
             raise NotImplementedError(
                 f"The evaluator: `{state.similarity_type}` is not supported.")

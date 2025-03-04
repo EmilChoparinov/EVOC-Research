@@ -24,7 +24,7 @@ import cma
 # /                 EA UTILITIES                 \
 # /\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\
 def file_idempotent(state: stypes.EAState) -> str:
-    return f"run-{state.run}-alpha-{state.alpha}-type-{state.similarity_type}.csv"
+    return f"run-{state.run}-alpha-{state.alpha}-{state.similarity_type}.csv"
 
 
 # /\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\

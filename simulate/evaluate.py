@@ -139,7 +139,7 @@ def evaluate_by_4_angles(behavior: pd.DataFrame, animal_data: pd.DataFrame) -> f
         s = 0; N = 4
         for i in range(N):
             s += abs(robot_angles[i] - animal_angles[i])
-            # s += (robot_angles[i] - animal_angles[i]) * (robot_angles[i] - animal_angles[i]) # MSE
+            # TODO: Try MSE here
 
         return s / N
 
@@ -224,42 +224,29 @@ def evaluate(behaviors: list[pd.DataFrame],state: stypes.EAState, gen_i: int):
                     'data_dtw': dtw_scores}
         
         case "MSE":
-<<<<<<< HEAD
             return [mix_ab(distance,
                            data.value_rebound(
                                evaluate_by_mse(behavior, state.animal_data),
                                (0, 30_000), (0, 2.5)),
-                               alpha)
-                    for behavior, distance in zip(behaviors, distances)]
-        case "2_Angles":
-            return [mix_ab(1 + distance / 500,
-                           evaluate_by_2_angles(behavior, state.animal_data) / 360,
-                           # evaluate_by_angle_dtw(behavior, state.animal_data),
-                           alpha)
-                    for behavior, distance in zip(behaviors, distances)]
+                               state.alpha)
+                    for behavior, distance in zip(behaviors, distance_scores)]
+
         case "4_Angles":
-            return [mix_ab(1 + distance / 500,
-                           evaluate_by_4_angles(behavior, state.animal_data) / 360,
-                           # evaluate_by_angle_dtw(behavior, state.animal_data),
-                           alpha)
-                    for behavior, distance in zip(behaviors, distances)]
-=======
-            mse_scores = [evaluate_by_mse(behavior, state.animal_data)
+            angle_scores = [evaluate_by_4_angles(behavior, state.animal_data)
                           for behavior in behaviors]
             return {'data_distance': distance_scores,
-                    'data_ab': ab_mixer(distance_scores, dtw_scores),
-                    'data_mse': mse_scores}
-        
-        case "Angles":
-            angle_scores = [evaluate_by_angle(behavior, state.animal_data) 
+                    'data_ab': ab_mixer(distance_scores, angle_scores),
+                    'data_4_angles': angle_scores}
+
+        case "2_Angles":
+            angle_scores = [evaluate_by_2_angles(behavior, state.animal_data) 
                             for behavior in behaviors]
             return {'data_distance': distance_scores,
                     'data_ab': ab_mixer(
                         [(d + 250)/250 for d in distance_scores], 
                         [a/180 for a in angle_scores]),
-                    'data_angle': angle_scores}
+                    'data_2_angles': angle_scores}
 
->>>>>>> 9483281 (merge complete)
         case "All_Angles":
             angle_scores = [evaluate_all_angles(behavior, state.animal_data)
                             for behavior in behaviors]
@@ -267,7 +254,7 @@ def evaluate(behaviors: list[pd.DataFrame],state: stypes.EAState, gen_i: int):
                     'data_ab': ab_mixer(
                                     [(d + 500)/500 for d in distance_scores], 
                                     [a/360 for a in angle_scores]),
-                    'data_angle': angle_scores}
+                    'data_all_angles': angle_scores}
         
         case _:
             raise NotImplementedError(

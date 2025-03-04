@@ -6,7 +6,7 @@ import numpy.typing as npt
 
 from revolve2.modular_robot_simulation import SceneSimulationState
 
-similarity_type = typing.Literal["DTW", "MSE", "Angles", "All_Angles"]
+similarity_type = typing.Literal["DTW", "MSE", "Angles", "All_Angles", "4_Angles", "2_Angles"]
 
 solution = npt.NDArray[np.float_]
 behavior = list[SceneSimulationState]

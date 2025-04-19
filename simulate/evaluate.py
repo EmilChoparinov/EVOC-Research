@@ -1,3 +1,5 @@
+import math
+
 from revolve2.modular_robot import ModularRobot
 import logging
 from scipy.spatial.distance import euclidean
@@ -43,6 +45,65 @@ def calculate_angle(p1, p2, p3):
 # /\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\
 def evaluate_by_distance(behavior: pd.DataFrame) -> float:
     return -max(behavior.iloc[-1]['head'][1] - behavior.iloc[0]['head'][1], 0)
+
+
+def evaluate_nr_of_bad_frames(behavior: pd.DataFrame) -> float:
+    def dist(point1, point2):
+        return math.sqrt((point1[0] - point2[0]) **2 + (point1[1] - point2[1]) **2)
+
+    nr = [0] * 17
+    limbs = ['right_front', 'left_front', 'right_hind', 'left_hind']
+
+    nr_touch = [0] * 4 # The amount of consecutive touches
+    nr_air = [0] * 4 # The amount of consecutive air
+
+    for i in range(1, len(behavior)):
+        for j, limb in enumerate(limbs):
+            limb_touch = (behavior.iloc[i][limb][2] < 0.044)
+            if limb_touch:
+                nr_touch[j] += 1
+                nr_air[j] = 0
+            else:
+                nr_touch[j] = 0
+                nr_air[j] += 1
+
+            if nr_touch[j] >= 120: # If a limb is stuck on the ground for 4 sec or more.
+                nr[j] += 1
+            if nr_air[j] >= 120: # If a limb is stuck in the air for 4 sec or more.
+                nr[j + 4] += 1
+
+        if min(nr_touch[0], nr_touch[1]) >= 5: # If both front limbs are stuck on the ground for 1/6 sec or more.
+            nr[8] += 1
+        if min(nr_touch[2], nr_touch[3]) >= 5: # If both back limbs are stuck on the ground for 1/6 sec or more.
+            nr[9] += 1
+        if min(nr_air[0], nr_air[1]) >= 60: # If both front limbs are stuck in the air for 2 sec or more.
+            nr[10] += 1
+        if min(nr_air[2], nr_air[3]) >= 60: # If both back limbs are stuck in the air for 2 sec or more.
+            nr[11] += 1
+
+        dist_right = dist(behavior.iloc[i]["right_front"], behavior.iloc[i]["right_hind"])
+        dist_left = dist(behavior.iloc[i]["left_front"], behavior.iloc[i]["left_hind"])
+        if dist_right < 34: # If the right limbs are too close.
+            nr[12] += 1
+            if dist_right < 24:
+                nr[12] += 1
+        if dist_left < 34: # If the left limbs are too close.
+            nr[13] += 1
+            if dist_left < 24:
+                nr[13] += 1
+
+        if behavior.iloc[i]['head'][2] < 0.0748: # If the head is very close to the ground.
+            nr[14] += 1
+        #if nr_touch[0] != 0 and nr_touch[3] != 0 and nr_touch[1] == 0 and nr_touch[2] == 0: # Left step
+        #    nr[15] -= 1
+        #if nr_touch[1] != 0 and nr_touch[2] != 0 and nr_touch[0] == 0 and nr_touch[3] == 0: # Right step
+        #    nr[16] -= 1
+
+
+    print(nr)
+    print(sum(nr))
+    return sum(nr)
+
 
 def evaluate_by_mse(behavior: pd.DataFrame, animal: pd.DataFrame):
     # Apply MSE to column vector pairs, then take the average of all these pairs
@@ -231,21 +292,23 @@ def evaluate(behaviors: list[pd.DataFrame],state: stypes.EAState, gen_i: int):
                                state.alpha)
                     for behavior, distance in zip(behaviors, distance_scores)]
 
+        case "2_Angles":
+            angle_scores = [evaluate_by_2_angles(behavior, state.animal_data)
+                            for behavior in behaviors]
+            return {'data_distance': [(d + 500)/500 for d in distance_scores],
+                    'data_ab': ab_mixer(
+                        [(d + 500)/500 for d in distance_scores],
+                        [a/360 for a in angle_scores]),
+                    'data_2_angles': angle_scores}
+
         case "4_Angles":
             angle_scores = [evaluate_by_4_angles(behavior, state.animal_data)
                           for behavior in behaviors]
-            return {'data_distance': distance_scores,
-                    'data_ab': ab_mixer(distance_scores, angle_scores),
-                    'data_4_angles': angle_scores}
-
-        case "2_Angles":
-            angle_scores = [evaluate_by_2_angles(behavior, state.animal_data) 
-                            for behavior in behaviors]
-            return {'data_distance': distance_scores,
+            return {'data_distance': [(d + 500)/500 for d in distance_scores],
                     'data_ab': ab_mixer(
-                        [(d + 250)/250 for d in distance_scores], 
-                        [a/180 for a in angle_scores]),
-                    'data_2_angles': angle_scores}
+                        [(d + 500)/500 for d in distance_scores],
+                        [a/360 for a in angle_scores]),
+                    'data_4_angles': angle_scores}
 
         case "All_Angles":
             angle_scores = [evaluate_all_angles(behavior, state.animal_data)

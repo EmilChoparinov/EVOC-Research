@@ -11,6 +11,7 @@ import simulate.ea as ea
 import pandas as pd
 import cv2
 import copy
+from revolve2.modular_robot.body.v2 import CoreV2, BrickV2
 
 # /\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\
 # /             SELECTION / QUERIES              \
@@ -26,6 +27,19 @@ point_definition = [
     "head", "middle", "rear",
     "left_hind", "right_hind", "left_front", "right_front"
 ]
+
+ref = BrickV2(0.0)
+point_mass = {
+    "head": CoreV2._FRAME_MASS,
+    # We omit the mass of the joints. I think for now its more accurate
+    # if we just use the mass of the boxes
+    "middle":ref.mass,
+    "rear":ref.mass,
+    "left_hind":ref.mass,
+    "right_hind":ref.mass,
+    "left_front":ref.mass,
+    "right_front":ref.mass
+}
 
 front_limb_group = ["left_front", "right_front"]
 
@@ -128,28 +142,51 @@ def apply_front_limb_heuristic(df: pd.DataFrame):
         df[limb] = df[limb].apply(lambda x: (x[0] * factor, x[1] * factor))
     return df
 
-def rotate_dataset(df: pd.DataFrame, theta: float):
-    # Define the rotation matrix
+def drop_z_axis(df: pd.DataFrame) -> pd.DataFrame:
+    new_df = df.copy()
+    for col in point_definition:
+        new_df[col] = new_df[col].apply(lambda v: (v[0], v[1]))
+    return new_df
+
+def rotate_dataset(df: pd.DataFrame, theta: float, axis: str = 'z'):
+    # Convert theta to radians
     rad_theta = np.deg2rad(theta)
-    rotation_matrix = np.array([
-        [np.cos(rad_theta), -np.sin(rad_theta)], 
-        [np.sin(rad_theta), np.cos(rad_theta)]])
     
-    # We rotate relative to the origin of the subject. We mark the head as the
-    # origin
-    center: tuple[float,float] = df['head'].iloc[0]
+    # Define the 3D rotation matrix based on the specified axis
+    if axis == 'x':
+        rotation_matrix = np.array([
+            [1, 0, 0],
+            [0, np.cos(rad_theta), -np.sin(rad_theta)],
+            [0, np.sin(rad_theta), np.cos(rad_theta)]
+        ])
+    elif axis == 'y':
+        rotation_matrix = np.array([
+            [np.cos(rad_theta), 0, np.sin(rad_theta)],
+            [0, 1, 0],
+            [-np.sin(rad_theta), 0, np.cos(rad_theta)]
+        ])
+    else:  # Default is 'z' axis
+        rotation_matrix = np.array([
+            [np.cos(rad_theta), -np.sin(rad_theta), 0],
+            [np.sin(rad_theta), np.cos(rad_theta), 0],
+            [0, 0, 1]
+        ])
+    
+    # Center is the head's 3D coordinates
+    center = df['head'].iloc[0]
 
     for point_to_rotate in point_definition:
-        # Subtract the origin to rotate by
-        df[point_to_rotate] = df[point_to_rotate].\
-            apply(lambda x: tuple(x0 - c for x0,c in zip(x, center)))
-
-        # Rotate the column
-        df[point_to_rotate] = df[point_to_rotate]\
-            .apply(lambda x: tuple(rotation_matrix @ x))
+        # Subtract the origin (head) to center the points
+        df[point_to_rotate] = df[point_to_rotate].apply(
+            lambda x: tuple(np.array(x) - np.array(center))
+        )
+        
+        # Apply rotation and convert back to tuple
+        df[point_to_rotate] = df[point_to_rotate].apply(
+            lambda x: tuple(rotation_matrix @ np.array(x))
+        )
     
     return df
-
 
 # /\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\
 # /             TRANSFORMS                       \
@@ -166,7 +203,7 @@ def behaviors_to_dataframes(
 
         def col_map(col: str, pose):
             abs_pose = pose(body_map[col])
-            return (abs_pose.position.x, abs_pose.position.y)
+            return (abs_pose.position.x, abs_pose.position.y, abs_pose.position.z)
 
         arr = []
         for idx, frame in enumerate(behavior):
@@ -185,7 +222,10 @@ def behaviors_to_dataframes(
         scale_factor = compute_scaling_factor(df, state.animal_data)
         for point in point_definition:
             df[point] = df[point]\
-                .apply(lambda x: (x[0] * scale_factor, x[1] * scale_factor))
+                .apply(lambda x: (
+                    x[0] * scale_factor, 
+                    x[1] * scale_factor,
+                    x[2] * scale_factor))
         
         # We also need to rotate the dataset so they walk the same direction
         rotate_dataset(df, -90)
@@ -242,7 +282,7 @@ def create_video_state(state: stypes.EAState):
 
     video = cv2.VideoWriter(
         f"{ea.file_idempotent(state)}.mp4",
-        cv2.VideoWriter_fourcc(*'MJPG'), 10, (frame_width, frame_height)) 
+        cv2.VideoWriter_fourcc(*'mp4v'), 10, (frame_width, frame_height)) 
 
     frame_count = min(len(robot_behavior), len(animal_behavior))
     robot_behavior = robot_behavior.iloc[:frame_count]
@@ -322,3 +362,16 @@ def create_video_state(state: stypes.EAState):
 
     video.release()
     cv2.destroyAllWindows()
+
+def harmonic_motion(samples=900, frequency=1.0, amplitude=1.0, phase=0.0):
+    t = np.linspace(0, 1, samples)
+
+    position = amplitude * np.sin(2 * np.pi * frequency * t + phase)
+
+    # Create DataFrame
+    df = pd.DataFrame({
+        'time': t,
+        'position': position
+    })
+
+    return df

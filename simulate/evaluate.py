@@ -170,6 +170,46 @@ def evaluate_by_2_angles(behavior: pd.DataFrame, animal_data: pd.DataFrame) -> f
 
     return np.mean(behavior["Angle_Diff"])
 
+import numpy as np
+import pandas as pd
+
+def evaluate_mechanical_work(behavior: pd.DataFrame, animal_data: pd.DataFrame):
+    targets = data.point_definition  # List of joint names
+    target_mass = data.point_mass    # Mass per joint
+    
+    dt = 30.0 / 900.0  # Time step duration
+    
+    def calc_work_joint(joint: str):
+        joint_positions = np.vstack(behavior[joint].values)  # Shape: (time_steps, 3)
+        mass = target_mass[joint]
+        
+        # displacement
+        delta_x = np.diff(joint_positions, axis=0)
+        
+        # acceleration computed via central differences equation
+        acceleration = (delta_x[1:] - delta_x[:-1]) / (dt ** 2)
+
+        # paired against `acceleration`. For each acceleration[t], we pair it
+        # with the displacement delta[t]
+        delta_x_paired = delta_x[1:]
+        
+        # work computation
+        work = mass * np.sum(acceleration * delta_x_paired, axis=1)
+        
+        return work
+    
+    # concatenate work from all joints and timesteps
+    all_work = np.concatenate([calc_work_joint(joint) for joint in targets])
+    
+    # For total "effort" (absolute work), use:
+    # The absolute work, used for training
+    total_work = np.sum(np.abs(all_work))
+    
+    # The net work, used for testing
+    # total_work = np.sum(all_work)
+    
+    return total_work
+
 def evaluate_by_4_angles(behavior: pd.DataFrame, animal_data: pd.DataFrame) -> float:
     def calculate_angle_difference(frame):
         robot_r_f = frame["right_front"]
@@ -204,6 +244,7 @@ def evaluate_by_4_angles(behavior: pd.DataFrame, animal_data: pd.DataFrame) -> f
 
         return s / N
 
+    behavior = data.drop_z_axis(behavior)
     behavior["Angle_Diff"] = behavior.apply(calculate_angle_difference, axis=1)
 
     return np.mean(behavior["Angle_Diff"])

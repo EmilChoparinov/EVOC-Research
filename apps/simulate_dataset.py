@@ -34,6 +34,7 @@ from revolve2.modular_robot_physical import Config, UUIDKey
 from revolve2.modular_robot_physical.remote import run_remote
 import numpy as np
 import ast
+import copy
 
 import simulate.data as data
 import simulate.stypes as stypes 
@@ -41,6 +42,7 @@ import simulate.ea as ea
 import simulate.data as data
 import simulate.evaluate as evaluate
 import typing
+import cv2
 
 parser = argparse.ArgumentParser()
 process_pd = lambda csv: data.convert_tuple_columns(pd.read_csv(csv))
@@ -102,7 +104,7 @@ robot = robots[0]
 behavior = behaviors[0]
 
 psuedo_state = ea.create_state(
-    generation=-1, 
+    generation=0, 
     run=-1, 
     alpha=args.alpha,
     similarity_type=args.similarity_type,
@@ -113,8 +115,7 @@ dfs = data.behaviors_to_dataframes(robots, behaviors, psuedo_state)
 scores = evaluate.evaluate(dfs, psuedo_state, -1)
 score, df = evaluate.most_fit(scores, dfs)
 
-import pdb; pdb.set_trace()
-
 data.apply_statistics(df, score, psuedo_state, -1)
 df.to_csv(ea.file_idempotent(psuedo_state), index=False)
+data.create_video_state(psuedo_state)
 print("Complete")

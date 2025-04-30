@@ -4,6 +4,9 @@
 .vscode/
 out/
 
+nsga2*.csv
+nsga2*.png
+
 *.csv
 *.zip
 *log

@@ -5,6 +5,8 @@ from collections import deque
 
 import numpy as np
 import pandas as pd
+import matplotlib
+matplotlib.use('Agg') 
 import matplotlib.pyplot as plt
 
 from deap import base, creator, tools, algorithms
@@ -23,11 +25,11 @@ from revolve2.standards.simulation_parameters import make_standard_batch_paramet
 import simulate.stypes as stypes
 import simulate.data as data
 import simulate.evaluate as evaluate
-
+from mpl_toolkits.mplot3d import Axes3D
 
 def nsga2_optimize(state: stypes.EAState, config: stypes.EAConfig):
     NUMBER_OF_GENES = 9
-    POP_SIZE = 128
+    POP_SIZE = 24
     NGEN = state.generation
 
     body_shape = gecko_v2()
@@ -72,14 +74,15 @@ def nsga2_optimize(state: stypes.EAState, config: stypes.EAConfig):
 
     def evaluate_population(individuals):
         robots, behaviors = simulate(individuals, cpg_struct, body_shape, mapping, config)
-        df_behaviors = data.behaviors_to_dataframes(robots, behaviors, state, z_axis=True)
+        df_behaviors = data.behaviors_to_dataframes(robots, behaviors, state)
 
+        work = [evaluate.evaluate_mechanical_work(behavior, state.animal_data) for behavior in df_behaviors]
         distances = [(-evaluate.evaluate_by_distance(behavior) - mean_dist) / std_dist for behavior in df_behaviors]
         similarities = [(evaluate.evaluate_by_4_angles(behavior, state.animal_data) - mean_sim) / std_sim for behavior in df_behaviors]
         #nr_of_bad_frames = [evaluate.evaluate_nr_of_bad_frames(df) for df in df_behaviors]
 
         # If you want to use the number of bad frames you just have to return list(zip(distances, nr_of_bad_frames)) - Everything should stay the same
-        return list(zip(distances, similarities))
+        return list(zip(work, distances, similarities))
 
     def evaluate_ind(individual):
         return 0.0, 0.0
@@ -89,21 +92,52 @@ def nsga2_optimize(state: stypes.EAState, config: stypes.EAConfig):
         final_df = pd.DataFrame([ind for ind in hof])
         final_df.to_csv(f"./CSVs_FINAL_2/nsga2-final-pareto_{generation}.csv", index=False)
 
-        # Showing the final results:
+        # Getting the final results:
         pareto_fitnesses = [ind.fitness.values for ind in hof]
-        objective_1 = [fit[0] * std_dist + mean_dist for fit in pareto_fitnesses]
-        objective_2 = [fit[1] * std_sim + mean_sim for fit in pareto_fitnesses]
+        objective_1_work = [fit[0] for fit in pareto_fitnesses]
+        objective_2_distance = [fit[1] for fit in pareto_fitnesses]
+        objective_3_similarity = [fit[2] for fit in pareto_fitnesses]
+        # import pdb;pdb.set_trace()
 
-        plt.figure(figsize=(8, 6))
-        plt.scatter(objective_2, objective_1, color='blue', label='Pareto Front')
-        plt.ylabel('Objective 1: Distance (maximize)')
-        plt.xlabel('Objective 2: Similarity (minimize)')
-        plt.title('NSGA-II Pareto Front')
-        plt.legend()
+        # Create a figure with 4 subplots
+        fig = plt.figure(figsize=(16, 12))
+        
+        plt.subplot(2, 2, 1)
+        plt.scatter(objective_2_distance, objective_1_work, color='blue')
+        plt.ylabel('Objective 1: Work (minimize)')
+        plt.xlabel('Objective 2: Distance (maximize)')
+        plt.title('Work vs Distance')
+        plt.ticklabel_format(style='plain')
         plt.grid(True)
+        
+        plt.subplot(2, 2, 2)
+        plt.scatter(objective_3_similarity, objective_1_work, color='red')
+        plt.ylabel('Objective 1: Work (minimize)')
+        plt.xlabel('Objective 3: Similarity (minimize)')
+        plt.title('Work vs Similarity')
+        plt.ticklabel_format(style='plain')
+        plt.grid(True)
+        
+        plt.subplot(2, 2, 3)
+        plt.scatter(objective_3_similarity, objective_2_distance, color='green')
+        plt.ylabel('Objective 2: Distance (maximize)')
+        plt.xlabel('Objective 3: Similarity (minimize)')
+        plt.title('Distance vs Similarity')
+        plt.ticklabel_format(style='plain')
+        plt.grid(True)
+        
+        ax = plt.subplot(2, 2, 4, projection='3d')
+        ax.scatter(objective_1_work, objective_2_distance, objective_3_similarity, color='purple')
+        ax.set_xlabel('Objective 1: Work (minimize)')
+        ax.set_ylabel('Objective 2: Distance (maximize)')
+        ax.set_zlabel('Objective 3: Similarity (minimize)')
+        plt.ticklabel_format(style='plain')
+        ax.set_title('3D Pareto Front')
+        
         plt.tight_layout()
         plt.savefig(f"./CSVs_FINAL_2/nsga2_pareto_plot_{generation}.png")
-        plt.show()
+        # plt.show(block=False)
+        plt.close()
 
     def update_means_and_stds(): # Not used
         all_distances = np.concatenate(distances)
@@ -113,7 +147,8 @@ def nsga2_optimize(state: stypes.EAState, config: stypes.EAConfig):
         mean_sim = np.mean(all_similarities)
         std_sim = np.std(all_similarities)
 # ----------------------------------------------------------------------------------------------------------------------
-    creator.create("FitnessMulti", base.Fitness, weights=(1.0, -1.0))  # max distance, min similarity
+    # (min work, max distance, min similarity)
+    creator.create("FitnessMulti", base.Fitness, weights=(-2.0, 1.0, -1.0))
     creator.create("Individual", list, fitness=creator.FitnessMulti)
 
     toolbox = base.Toolbox()
@@ -157,17 +192,18 @@ def nsga2_optimize(state: stypes.EAState, config: stypes.EAConfig):
         hof.update(pop)
 
         # We save the results
-        df_scores = pd.DataFrame(fitnesses, columns=["objective_1_distance", "objective_2_similarity"])
-        df_scores["objective_1_distance"] = [fit[0] * std_dist + mean_dist for fit in fitnesses]
-        df_scores["objective_2_similarity"] = [fit[1] * std_sim + mean_sim for fit in fitnesses]
+        df_scores = pd.DataFrame(fitnesses, columns=["objective_1_work", "objective_3_similarity", "objective_2_distance"])
+        df_scores["objective_1_work"] = [fit[0] for fit in fitnesses]
+        df_scores["objective_2_distances"] = [fit[1] for fit in fitnesses]
+        df_scores["objective_3_similarity"] = [fit[2] for fit in fitnesses]
         df_scores["generation"] = gen
         df_scores["genotype"] = [json.dumps(ind) for ind in pop]
-        df_scores = df_scores.sort_values(by="objective_1_distance", ascending=True).reset_index(drop=True)
+        df_scores = df_scores.sort_values(by="objective_3_similarity", ascending=True).reset_index(drop=True)
 
         filename = f"./CSVs_2/nsga2-gen-{gen}-pareto.csv"
         df_scores.to_csv(filename, index=False)
 
-        if (gen + 1) % 10 == 0:
-            save_and_show(gen)
+        # if (gen + 1) % 10 == 0:
+        save_and_show(gen)
 
     save_and_show(NGEN)

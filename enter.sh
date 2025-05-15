@@ -16,7 +16,7 @@ else
     echo "===== INSTALLING \`.revolve2-detached\` ====="    
     cd .revolve2-detached
     sh student_install.sh
+    pip install -r requirements_dev.txt
     cd ..
-    pip install -r requirements.txt
     echo "All done! You can now use `source enter.sh` to enter without re-installation."
 fi

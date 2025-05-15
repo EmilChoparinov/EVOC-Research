@@ -3,7 +3,7 @@ import math
 from revolve2.modular_robot import ModularRobot
 import logging
 from scipy.spatial.distance import euclidean
-from fastdtw import fastdtw
+# from fastdtw import 
 import simulate.data as data
 import ast
 import pandas as pd
@@ -359,7 +359,11 @@ def evaluate(behaviors: list[pd.DataFrame],state: stypes.EAState, gen_i: int):
                                     [(d + 500)/500 for d in distance_scores], 
                                     [a/360 for a in angle_scores]),
                     'data_all_angles': angle_scores}
-        
+        case "distance":
+            return {
+                'data_distance': distance_scores,
+                'data_ab': distance_scores
+            }
         case _:
             raise NotImplementedError(
                 f"The evaluator: `{state.similarity_type}` is not supported.")

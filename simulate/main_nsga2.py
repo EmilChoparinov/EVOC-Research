@@ -4,7 +4,7 @@ import simulate.ea_nsga2 as ea_nsga2
 import simulate.data as data
 
 if __name__ == '__main__':
-    generations = 500
+    generations = 250
     runs = 1
     animal_data_file = "./simulate/model/slow_with_linear_4.csv"
     animal_data = data.convert_tuple_columns(pd.read_csv(animal_data_file))

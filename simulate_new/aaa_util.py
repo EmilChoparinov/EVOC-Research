@@ -13,7 +13,7 @@ from revolve2.standards import terrains
 from revolve2.standards.modular_robots_v2 import gecko_v2
 from revolve2.standards.simulation_parameters import make_standard_batch_parameters
 from simulate_new import data, stypes, evaluate
-from simulate_new.ea import simulate_solutions, simulate_simple
+from simulate_new.cmaes_ea import simulate_solutions, simulate_simple
 from simulate_new.evaluate import calculate_4_angles
 
 def optimize_individual(genotype, std_dev=0.005):

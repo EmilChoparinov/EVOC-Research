@@ -1,7 +1,7 @@
 import pandas as pd
 
 import simulate_new.stypes as stypes
-import simulate_new.ea as ea
+import simulate_new.cmaes_ea as ea
 from simulate_new import data
 from revolve2.experimentation.logging import setup_logging, logging
 

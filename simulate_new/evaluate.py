@@ -198,8 +198,7 @@ def evaluate_by_4_angles(behavior: pd.DataFrame, animal_data: pd.DataFrame) -> f
 
         s = 0; N = 4
         for i in range(N):
-            s += abs(robot_angles[i] - animal_angles[i])
-            # TODO: Try MSE here
+            s += (robot_angles[i] - animal_angles[i]) * (robot_angles[i] - animal_angles[i])
 
         return s / N
 

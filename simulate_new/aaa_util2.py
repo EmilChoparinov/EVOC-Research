@@ -75,7 +75,7 @@ def evaluate_individual_distance(genotype):
     cpg_struct, mapping = active_hinges_to_cpg_network_structure_neighbor(
         body_shape.find_modules_of_type(ActiveHinge))
 
-    animal_data_file = "Files/slow_with_linear_4.csv"
+    animal_data_file = "Files/slow_lerp_4.csv"
     animal_data = data.convert_tuple_columns(pd.read_csv(animal_data_file))
     state = stypes.EAState(
         generation=1,
@@ -123,7 +123,7 @@ def evaluate_individual_similarity(genotype):
     cpg_struct, mapping = active_hinges_to_cpg_network_structure_neighbor(
         body_shape.find_modules_of_type(ActiveHinge))
 
-    animal_data_file = "Files/slow_with_linear_4.csv"
+    animal_data_file = "Files/slow_lerp_4.csv"
     animal_data = data.convert_tuple_columns(pd.read_csv(animal_data_file))
     state = stypes.EAState(
         generation=1,

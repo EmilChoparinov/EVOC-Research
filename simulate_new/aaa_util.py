@@ -5,14 +5,13 @@ from revolve2.modular_robot.body.base import ActiveHinge
 from revolve2.modular_robot.brain.cpg import active_hinges_to_cpg_network_structure_neighbor
 from revolve2.standards.modular_robots_v2 import gecko_v2
 from simulate_new import data, stypes
-from simulate_new.aaa_util2 import evaluate_individual_similarity
+from simulate_new.aaa_util2 import evaluate_individual_similarity, evaluate_individual_distance
 from simulate_new.ea import simulate_solutions
 from simulate_new.evaluate import calculate_4_angles
 
 def plot_angle_comparison(robot_angles, animal_angles):
     num_angles = 4
-    time = range(len(robot_angles[0]))  # assuming all have the same length
-    print(time)
+    time = range(901)
 
     for i in range(num_angles):
         plt.figure()
@@ -27,7 +26,7 @@ def plot_angle_comparison(robot_angles, animal_angles):
         plt.show()
 
 def compare_with_animal(genotype):
-    animal_data_file = "Files/slow_with_linear_4.csv"
+    animal_data_file = "Files/slow_lerp_4.csv"
     animal_data = data.convert_tuple_columns(pd.read_csv(animal_data_file))
     state = stypes.EAState(
         generation=0,
@@ -50,8 +49,10 @@ def compare_with_animal(genotype):
 
     plot_angle_comparison(robot_angles, animal_angles)
 
-genotype = [-2.5, 0.8142331174729603, 0.06558948796912085,
-            -2.4955815158463506, 1.6487105111015121, -2.5,
-            2.495983077798169, -1.9510357390627722, -1.1433926155885599]
+genotype = [-1.36918234, -0.28729471, -2.49133755, -0.05042451, -1.6723255 ,
+       -1.81931257,  2.48498   ,  1.00360881, -2.49668466]
+
+genotype = [ 1.52459752,  2.246151  ,  1.27485924, -1.70201395,  2.23114975,
+        1.47143735,  2.46921194, -0.57575046, -2.48014768]
+print(evaluate_individual_similarity(genotype), evaluate_individual_distance(genotype))
 compare_with_animal(genotype)
-print(evaluate_individual_similarity(genotype))

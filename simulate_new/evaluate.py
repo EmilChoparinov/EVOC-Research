@@ -3,9 +3,10 @@ import math
 from scipy.spatial.distance import euclidean
 from fastdtw import fastdtw
 import simulate_new.data as data
+from data import calculate_angle
 import pandas as pd
 import numpy as np
-from simulate_new.data import calculate_angle, mix_ab, ab_mixer
+from simulate_new.data import mix_ab, ab_mixer
 import simulate_new.stypes as stypes
 from sklearn.metrics import mean_squared_error
 

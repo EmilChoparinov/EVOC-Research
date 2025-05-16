@@ -1,11 +1,9 @@
 from revolve2.modular_robot import ModularRobot
 from revolve2.modular_robot.body.v2 import BodyV2, BrickV2, CoreV2
-from functools import reduce
 
 import numpy as np
 import ast
 import simulate_new.stypes as stypes
-import simulate_new.ea as ea
 import pandas as pd
 import cv2
 import copy

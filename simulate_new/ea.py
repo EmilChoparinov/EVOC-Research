@@ -133,7 +133,7 @@ def optimize(state: stypes.EAState, config: stypes.EAConfig, objective: objectiv
             best_over_all_score = best_score
             best_over_all_sol = population_list[best_idx]
 
-        logging.info(f"Best distance: {best_over_all_score}")
+        logging.info(f"Best {objective}: {best_over_all_score}")
         logging.info(f"Best sol: {best_over_all_sol}")
 
         robot, behavior = simulate_solutions([best_over_all_sol], cpg_struct, body_shape, mapping, config)

@@ -16,6 +16,7 @@ from revolve2.modular_robot.brain.cpg import active_hinges_to_cpg_network_struct
 from revolve2.standards.modular_robots_v2 import gecko_v2
 from revolve2.simulators.mujoco_simulator import LocalSimulator
 from revolve2.standards.simulation_parameters import make_standard_batch_parameters
+from simulate_new.evaluate import calculate_2_angles
 
 from simulate_new.stypes import objective_type
 import os

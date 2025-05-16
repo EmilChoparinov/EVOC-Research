@@ -106,6 +106,37 @@ def evaluate_by_dtw(behavior: pd.DataFrame, animal: pd.DataFrame):
 
     return distance
 
+def calculate_2_angles(movement: pd.DataFrame):
+    def calculate_angle_difference(frame):
+        rf = frame["right_front"]
+        rh = frame["right_hind"]
+        lf = frame["left_front"]
+        lh = frame["left_hind"]
+
+        angle1 = calculate_angle(rf, lh, lf)
+        angle2 = calculate_angle(lf, rh, rf)
+
+        return angle1, angle2
+
+    return movement.apply(calculate_angle_difference, axis=1)
+
+def calculate_4_angles(movement: pd.DataFrame):
+    def calculate_angle_difference(frame):
+        rf = frame["right_front"]
+        rh = frame["right_hind"]
+        lf = frame["left_front"]
+        lh = frame["left_hind"]
+
+        angle1 = calculate_angle(rf, lh, lf)
+        angle2 = calculate_angle(lf, rh, rf)
+        angle3 = calculate_angle(rh, lf, lh)
+        angle4 = calculate_angle(lh, rf, rh)
+
+        return angle1, angle2, angle3, angle4
+
+    return movement.apply(calculate_angle_difference, axis=1)
+
+
 def evaluate_by_2_angles(behavior: pd.DataFrame, animal_data: pd.DataFrame) -> float:
     # TODO: Move the angle information into tuples into the data section alongside
     #       everything else similar to this

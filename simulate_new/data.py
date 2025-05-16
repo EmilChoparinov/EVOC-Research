@@ -88,7 +88,7 @@ def ab_mixer(xs,ys, a): return [mix_ab(x,y,a) for x,y in zip(xs, ys)]
 
 
 def calculate_angle(p1, p2, p3):
-    P = np.array([p1, p2, p3])
+    P = np.array([p1[:2], p2[:2], p3[:2]])
 
     vec1 = P[0] - P[1]
     vec2 = P[2] - P[1]

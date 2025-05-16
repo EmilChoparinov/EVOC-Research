@@ -1,5 +1,0 @@
-if(GENERATE_PYTHON_BINDINGS)
-    add_test(python_test_import ${CMAKE_CURRENT_SOURCE_DIR}/test_import.py)
-    add_test(python_test_raw_genome ${CMAKE_CURRENT_SOURCE_DIR}/test_raw_genome.py)
-    add_test(python_test_xor "${CMAKE_CURRENT_SOURCE_DIR}/test_xor.py")
-endif()

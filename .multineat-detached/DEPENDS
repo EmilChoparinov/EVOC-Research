@@ -1,7 +1,0 @@
-* scikit-build for building the python bindings
-* Python 2.7 (with headers and libs) (optional)
-* ProgressBar (Python package) (optional)
-* NumPy (Python package) (optional)
-* Matplotlib (Python package) (optional)
-* OpenCV 2.3 and above (with Python bindings) (optional)
-* Cython (if you want Python bindings)

@@ -5,6 +5,7 @@
 out/
 
 *.csv
+!slow_with_linear_4.csv
 *.zip
 *log
 *.txt

@@ -9,10 +9,6 @@ else
     python -m venv .venv
     source .venv/bin/activate
     echo "===== Made $PWD/.venv/bin/activate ====="
-    echo "===== INSTALLING \`.mulitneat-detached\` ====="
-    cd .multineat-detached
-    pip install .
-    cd ..
     echo "===== INSTALLING \`.revolve2-detached\` ====="    
     cd .revolve2-detached
     sh student_install.sh

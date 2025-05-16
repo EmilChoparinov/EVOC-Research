@@ -82,7 +82,7 @@ def simulate_solutions(solution_set: list[stypes.solution],
 
 def optimize(state: stypes.EAState, config: stypes.EAConfig, objective: objective_type):
     NUMBER_OF_GENES = 9
-    POP_SIZE = 4
+    POP_SIZE = 16
     NGEN = state.generation
 
     body_shape = gecko_v2()

@@ -153,17 +153,20 @@ def evaluate_by_2_angles(behavior: pd.DataFrame, animal_data: pd.DataFrame) -> f
         animal_l_f = animal_data.loc[frame.name, "left_front"]
         animal_l_h = animal_data.loc[frame.name, "left_hind"]
 
+        robot_angles = []
+        animal_angles = []
 
-        robot_angle1 = calculate_angle(robot_r_f, robot_l_h, robot_l_f)
-        animal_angle1 = calculate_angle(animal_r_f, animal_l_h, animal_l_f)
+        robot_angles.append(calculate_angle(robot_r_f, robot_l_h, robot_l_f))
+        animal_angles.append(calculate_angle(animal_r_f, animal_l_h, animal_l_f))
 
-        robot_angle2 = calculate_angle(robot_l_f, robot_r_h, robot_r_f)
-        animal_angle2 = calculate_angle(animal_l_f, animal_r_h, animal_r_f)
+        robot_angles.append(calculate_angle(robot_l_f, robot_r_h, robot_r_f))
+        animal_angles.append(calculate_angle(animal_l_f, animal_r_h, animal_r_f))
 
-        diff1 = abs(robot_angle1 - animal_angle1)
-        diff2 = abs(robot_angle2 - animal_angle2)
+        s = 0; N = 2
+        for i in range(N):
+            s += (robot_angles[i] - animal_angles[i]) * (robot_angles[i] - animal_angles[i])
 
-        return (diff1 + diff2) / 2
+        return s / N
 
     behavior["Angle_Diff"] = behavior.apply(calculate_angle_difference, axis=1)
 
@@ -231,7 +234,7 @@ def evaluate_by_all_angles(behavior: pd.DataFrame, animal_data: pd.DataFrame) ->
                                                          animal_data.loc[frame.name, data.point_definition[k]]))
         s = 0
         for i in range(len(robot_angles)):
-            s += abs(robot_angles[i] - animal_angles[i])
+            s += (robot_angles[i] - animal_angles[i]) * (robot_angles[i] - animal_angles[i])
 
         return s / len(robot_angles)
 

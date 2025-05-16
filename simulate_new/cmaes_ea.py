@@ -98,10 +98,10 @@ def optimize(state: stypes.EAState, config: stypes.EAConfig, objective: objectiv
         match objective:
             case "Distance":
                 return [evaluate.evaluate_by_distance(df) for df in df_behaviors]
-            case "MSE":
-                return [evaluate.evaluate_by_mse(df, state.animal_data) for df in df_behaviors]
-            case "DTW":
-                return [evaluate.evaluate_by_dtw(df, state.animal_data) for df in df_behaviors]
+            #case "MSE":
+            #    return [evaluate.evaluate_by_mse(df, state.animal_data) for df in df_behaviors]
+            #case "DTW":
+            #    return [evaluate.evaluate_by_dtw(df, state.animal_data) for df in df_behaviors]
             case "2_Angles":
                 return [evaluate.evaluate_by_2_angles(df, state.animal_data) for df in df_behaviors]
             case "4_Angles":
@@ -132,24 +132,23 @@ def optimize(state: stypes.EAState, config: stypes.EAConfig, objective: objectiv
         if best_score < best_over_all_score:
             best_over_all_score = best_score
             best_over_all_sol = population_list[best_idx]
+            robot, behavior = simulate_solutions([best_over_all_sol], cpg_struct, body_shape, mapping, config)
+            df = data.behaviors_to_dataframes(robot, behavior, state, z_axis=True)[0]
+            new_entry = {
+                "generation": gen,
+                "genotype": best_over_all_sol,
+                "distance": -evaluate.evaluate_by_distance(df),
+                # "MSE": evaluate.evaluate_by_mse(df, state.animal_data),
+                # "DTW": evaluate.evaluate_by_dtw(df, state.animal_data),
+                "2_Angles": evaluate.evaluate_by_2_angles(df, state.animal_data),
+                "4_Angles": evaluate.evaluate_by_4_angles(df, state.animal_data),
+                "All_Angles": evaluate.evaluate_by_all_angles(df, state.animal_data),
+                "Work": evaluate.evaluate_mechanical_work(df),
+            }
+            to_dump.append(new_entry)
 
         logging.info(f"Best {objective}: {best_over_all_score}")
         logging.info(f"Best sol: {best_over_all_sol}")
-
-        robot, behavior = simulate_solutions([best_over_all_sol], cpg_struct, body_shape, mapping, config)
-        df = data.behaviors_to_dataframes(robot, behavior, state, z_axis=True)[0]
-        new_entry = {
-            "generation": gen,
-            "genotype": best_over_all_sol,
-            "distance": -evaluate.evaluate_by_distance(df),
-            #"MSE": evaluate.evaluate_by_mse(df, state.animal_data),
-            #"DTW": evaluate.evaluate_by_dtw(df, state.animal_data),
-            "2_Angles": evaluate.evaluate_by_2_angles(df, state.animal_data),
-            "4_Angles": evaluate.evaluate_by_4_angles(df, state.animal_data),
-            "All_Angles": evaluate.evaluate_by_all_angles(df, state.animal_data),
-            "Work": evaluate.evaluate_mechanical_work(df),
-        }
-        to_dump.append(new_entry)
 
     os.makedirs("Outputs/CMAES_CSVs", exist_ok=True)
     with open(f"Outputs/CMAES_CSVs/best_solutions_run_{state.run}.json", "w") as file:

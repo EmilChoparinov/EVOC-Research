@@ -298,8 +298,8 @@ def evaluate_by_2_angles_dtw(behavior: pd.DataFrame, animal_data: pd.DataFrame) 
         r["left_front"], r["right_hind"], r["right_front"]
     ) ,axis=1).values
 
-    # distance, _ = fastdtw(
-    #     np.column_stack((angle1, angle2)), np.column_stack((angle1_animal, angle2_animal)))
+    distance, _ = fastdtw(
+         np.column_stack((angle1, angle2)), np.column_stack((angle1_animal, angle2_animal)))
     
     return distance
 

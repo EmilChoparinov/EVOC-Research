@@ -6,7 +6,7 @@ import numpy.typing as npt
 
 from revolve2.modular_robot_simulation import SceneSimulationState
 
-objective_type = typing.Literal["DTW", "MSE", "All_Angles", "4_Angles", "2_Angles", "Distance"]
+objective_type = typing.Literal["Distance", "MSE", "DTW", "2_Angles", "4_Angles", "All_Angles", "Work"]
 
 solution = npt.NDArray[np.float_]
 behavior = list[SceneSimulationState]

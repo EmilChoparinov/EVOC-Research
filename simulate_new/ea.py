@@ -66,7 +66,7 @@ def simulate_solutions(solution_set: list[stypes.solution],
 
 def optimize(state: stypes.EAState, config: stypes.EAConfig, objective: objective_type):
     NUMBER_OF_GENES = 9
-    POP_SIZE = 2
+    POP_SIZE = 4
     NGEN = state.generation
 
     body_shape = gecko_v2()
@@ -78,7 +78,7 @@ def optimize(state: stypes.EAState, config: stypes.EAConfig, objective: objectiv
 
     def evaluate_population(individuals):
         robots, behaviors = simulate_solutions(individuals, cpg_struct, body_shape, mapping, config)
-        df_behaviors = data.behaviors_to_dataframes(robots, behaviors, state, z_axis=False)
+        df_behaviors = data.behaviors_to_dataframes(robots, behaviors, state, z_axis=True)
 
         match objective:
             case "Distance":
@@ -93,6 +93,8 @@ def optimize(state: stypes.EAState, config: stypes.EAConfig, objective: objectiv
                 return [evaluate.evaluate_by_4_angles(df, state.animal_data) for df in df_behaviors]
             case "All_Angles":
                 return [evaluate.evaluate_by_all_angles(df, state.animal_data) for df in df_behaviors]
+            case "Work":
+                return [evaluate.evaluate_mechanical_work(df) for df in df_behaviors]
 
 
     cma_es_options = CMAOptions()
@@ -101,6 +103,7 @@ def optimize(state: stypes.EAState, config: stypes.EAConfig, objective: objectiv
 
     cma_es = CMAEvolutionStrategy(NUMBER_OF_GENES * [0.0], 0.5, cma_es_options)
 
+    to_dump = []
     for gen in range(NGEN):
         logging.info(f"Run {state.run} - Generation {gen + 1}/{NGEN}")
 
@@ -116,20 +119,27 @@ def optimize(state: stypes.EAState, config: stypes.EAConfig, objective: objectiv
             best_over_all_score = best_score
             best_over_all_sol = population_list[best_idx]
 
-            logging.info(f"Best distance: {best_over_all_score}")
-            logging.info(f"Best sol: {best_over_all_sol}")
-            os.makedirs("Outputs/CMAES_CSVs", exist_ok=True)
-            with open(f"Outputs/CMAES_CSVs/best_run_{state.run}.json", "w") as file:
-                robots, behaviors = simulate_solutions([best_over_all_sol], cpg_struct, body_shape, mapping, config)
-                df = data.behaviors_to_dataframes(robots, behaviors, state, z_axis=False)[0]
-                json.dump({"genotype": best_over_all_sol,
-                           "distance": -evaluate.evaluate_by_distance(df),
-                           "MSE": evaluate.evaluate_by_mse(df, state.animal_data),
-                           "DTW": evaluate.evaluate_by_dtw(df, state.animal_data),
-                           "2_Angle": evaluate.evaluate_by_2_angles(df, state.animal_data),
-                           "4_Angle": evaluate.evaluate_by_4_angles(df, state.animal_data),
-                           "All_Angle": evaluate.evaluate_by_all_angles(df, state.animal_data)
-                           }, file)
+        logging.info(f"Best distance: {best_over_all_score}")
+        logging.info(f"Best sol: {best_over_all_sol}")
+
+        robot, behavior = simulate_solutions([best_over_all_sol], cpg_struct, body_shape, mapping, config)
+        df = data.behaviors_to_dataframes(robot, behavior, state, z_axis=False)[0]
+        new_entry = {
+            "generation": gen,
+            "genotype": best_over_all_sol,
+            "distance": -evaluate.evaluate_by_distance(df),
+            "MSE": evaluate.evaluate_by_mse(df, state.animal_data),
+            "DTW": evaluate.evaluate_by_dtw(df, state.animal_data),
+            "2_Angles": evaluate.evaluate_by_2_angles(df, state.animal_data),
+            "4_Angles": evaluate.evaluate_by_4_angles(df, state.animal_data),
+            "All_Angles": evaluate.evaluate_by_all_angles(df, state.animal_data),
+            "Work": evaluate.evaluate_mechanical_work(df),
+        }
+        to_dump.append(new_entry)
+
+    os.makedirs("Outputs/CMAES_CSVs", exist_ok=True)
+    with open(f"Outputs/CMAES_CSVs/best_solutions_run_{state.run}.json", "w") as file:
+        json.dump(to_dump, file, indent=2)
 
 
     logging.info(f"Best {objective}: {best_over_all_score}")

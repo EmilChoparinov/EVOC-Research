@@ -1,5 +1,5 @@
 from revolve2.modular_robot import ModularRobot
-from revolve2.modular_robot.body.v2 import BodyV2
+from revolve2.modular_robot.body.v2 import BodyV2, BrickV2, CoreV2
 from functools import reduce
 
 import numpy as np
@@ -35,6 +35,19 @@ edge_definition = [
     ('rear', 'right_hind'), 
     ('rear', 'left_hind')
 ]
+
+ref = BrickV2(0.0)
+point_mass = {
+    "head": CoreV2._FRAME_MASS,
+    # We omit the mass of the joints. I think for now its more accurate
+    # if we just use the mass of the boxes
+    "middle":ref.mass,
+    "rear":ref.mass,
+    "left_hind":ref.mass,
+    "right_hind":ref.mass,
+    "left_front":ref.mass,
+    "right_front":ref.mass
+}
 
 # /\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\
 # /             DATA UTILITIES                   \

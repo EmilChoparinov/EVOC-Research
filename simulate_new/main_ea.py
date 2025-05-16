@@ -6,12 +6,12 @@ from simulate_new import data
 from revolve2.experimentation.logging import setup_logging, logging
 
 if __name__ == '__main__':
-    generations = 1
+    generations = 2
     animal_data_file = "Files/slow_with_linear_4.csv"
     animal_data = data.convert_tuple_columns(pd.read_csv(animal_data_file))
     objective_type: stypes.objective_type = "Distance"
 
-    for run in range(1, 2):
+    for run in range(1, 3):
         state = stypes.EAState(
             generation=generations,
             run=run,

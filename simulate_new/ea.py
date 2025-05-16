@@ -88,7 +88,7 @@ def optimize(state: stypes.EAState, config: stypes.EAConfig, objective: objectiv
     cpg_struct, mapping = active_hinges_to_cpg_network_structure_neighbor(
         body_shape.find_modules_of_type(ActiveHinge))
 
-    best_over_all_score = -math.inf
+    best_over_all_score = math.inf
     best_over_all_sol = None
 
     def evaluate_population(individuals):
@@ -111,7 +111,6 @@ def optimize(state: stypes.EAState, config: stypes.EAConfig, objective: objectiv
             case "Work":
                 return [evaluate.evaluate_mechanical_work(df) for df in df_behaviors]
 
-
     cma_es_options = CMAOptions()
     cma_es_options.set("bounds", [-2.5, 2.5])
     cma_es_options.set("popsize", POP_SIZE)
@@ -129,8 +128,8 @@ def optimize(state: stypes.EAState, config: stypes.EAConfig, objective: objectiv
 
         # Save best solution
         best_idx = np.argmin(fitnesses)
-        best_score = -fitnesses[best_idx]
-        if best_score > best_over_all_score:
+        best_score = fitnesses[best_idx]
+        if best_score < best_over_all_score:
             best_over_all_score = best_score
             best_over_all_sol = population_list[best_idx]
 

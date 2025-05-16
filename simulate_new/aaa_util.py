@@ -107,7 +107,7 @@ def plot_4_angles_comparison(robot_angles, animal_angles):
         plt.tight_layout()
         plt.show()
 
-def compare_with_animal(genotype):
+def compare_with_animal_4(genotype):
     animal_data = data.convert_tuple_columns(pd.read_csv(animal_data_file))
     state = stypes.EAState(
         generation=0,
@@ -129,11 +129,11 @@ def compare_with_animal(genotype):
     animal_angles = list(zip(*calculate_4_angles(state.animal_data)))
 
     plot_4_angles_comparison(robot_angles, animal_angles)
-
+# ----------------------------------------------------------------------------------------------------------------------
 
 animal_data_file = "Files/slow_lerp_2.csv"
 genotype = \
     [0.036649153873096446, -2.061278855579364, 0.5189419969840877, 1.1394412650969163, 0.5482997763941425,
      1.88291171787614, 2.0019150900921763, -0.3051657544824517, -0.8574720394064639]
 print(evaluate_individual_similarity_4(genotype), evaluate_individual_distance(genotype))
-#compare_with_animal(genotype)
+compare_with_animal_4(genotype)

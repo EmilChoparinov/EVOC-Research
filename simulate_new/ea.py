@@ -88,7 +88,7 @@ def optimize(state: stypes.EAState, config: stypes.EAConfig, objective: objectiv
     cpg_struct, mapping = active_hinges_to_cpg_network_structure_neighbor(
         body_shape.find_modules_of_type(ActiveHinge))
 
-    best_over_all_score = 0
+    best_over_all_score = -math.inf
     best_over_all_sol = None
 
     def evaluate_population(individuals):

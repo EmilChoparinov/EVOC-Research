@@ -39,10 +39,6 @@ def local_path(path: str, module: str = "Outputs") -> str:
     Path(full_path).parent.mkdir(parents=True, exist_ok=True)
     return full_path
 
-def file_idempotent(state: stypes.EAState, objective: objective_type) -> str:
-    return f"./run-{state.run}-alpha-{state.alpha}-{objective}.csv"
-
-
 def simulate_simple(solution: stypes.solution):
     body_shape = gecko_v2()
     cpg_struct, mapping = active_hinges_to_cpg_network_structure_neighbor(
@@ -50,6 +46,10 @@ def simulate_simple(solution: stypes.solution):
     return simulate_solutions(
         [solution], cpg_struct, body_shape, create_config(30, 30))
 
+def file_idempotent(state: stypes.EAState, objective: objective_type) -> str:
+    return f"./run-{state.run}-alpha-{state.alpha}-{objective}.csv"
+
+# ------------
 def simulate_solutions(solution_set: list[stypes.solution],
                        cpg_struct: CpgNetworkStructure,
                        body_shape: BodyV2, body_map: any,
@@ -137,13 +137,13 @@ def optimize(state: stypes.EAState, config: stypes.EAConfig, objective: objectiv
         logging.info(f"Best sol: {best_over_all_sol}")
 
         robot, behavior = simulate_solutions([best_over_all_sol], cpg_struct, body_shape, mapping, config)
-        df = data.behaviors_to_dataframes(robot, behavior, state, z_axis=False)[0]
+        df = data.behaviors_to_dataframes(robot, behavior, state, z_axis=True)[0]
         new_entry = {
             "generation": gen,
             "genotype": best_over_all_sol,
             "distance": -evaluate.evaluate_by_distance(df),
-            "MSE": evaluate.evaluate_by_mse(df, state.animal_data),
-            "DTW": evaluate.evaluate_by_dtw(df, state.animal_data),
+            #"MSE": evaluate.evaluate_by_mse(df, state.animal_data),
+            #"DTW": evaluate.evaluate_by_dtw(df, state.animal_data),
             "2_Angles": evaluate.evaluate_by_2_angles(df, state.animal_data),
             "4_Angles": evaluate.evaluate_by_4_angles(df, state.animal_data),
             "All_Angles": evaluate.evaluate_by_all_angles(df, state.animal_data),

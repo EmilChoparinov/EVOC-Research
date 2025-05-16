@@ -1,6 +1,5 @@
 import json
 import logging
-import fastdtw
 import numpy as np
 from cma import CMAOptions, CMAEvolutionStrategy
 

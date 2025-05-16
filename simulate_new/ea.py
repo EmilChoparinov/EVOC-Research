@@ -44,7 +44,7 @@ def simulate_simple(solution: stypes.solution):
     cpg_struct, mapping = active_hinges_to_cpg_network_structure_neighbor(
         body_shape.find_modules_of_type(ActiveHinge))
     return simulate_solutions(
-        [solution], cpg_struct, body_shape, create_config(30, 30))
+        [solution], cpg_struct, body_shape, mapping, create_config(30, 30))
 
 def file_idempotent(state: stypes.EAState, objective: objective_type) -> str:
     return f"./run-{state.run}-alpha-{state.alpha}-{objective}.csv"

@@ -1,6 +1,6 @@
 import json
 import logging
-
+import fastdtw
 import numpy as np
 from cma import CMAOptions, CMAEvolutionStrategy
 
@@ -23,6 +23,7 @@ import simulate_new.stypes as stypes
 import simulate_new.evaluate as evaluate
 import simulate_new.data as data
 import pandas as pd
+from pathlib import Path
 
 def create_state(
         generation: int, run: int, alpha: float, animal_data: pd.DataFrame):
@@ -32,8 +33,23 @@ def create_state(
 def create_config(ttl: int, freq: int):
     return stypes.EAConfig(ttl=ttl, freq=freq)
 
+def local_path(path: str, module: str = "Outputs") -> str:
+    full_path =\
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), module, path)
+
+    Path(full_path).parent.mkdir(parents=True, exist_ok=True)
+    return full_path
+
 def file_idempotent(state: stypes.EAState, objective: objective_type) -> str:
     return f"./run-{state.run}-alpha-{state.alpha}-{objective}.csv"
+
+
+def simulate_simple(solution: stypes.solution):
+    body_shape = gecko_v2()
+    cpg_struct, mapping = active_hinges_to_cpg_network_structure_neighbor(
+        body_shape.find_modules_of_type(ActiveHinge))
+    return simulate_solutions(
+        [solution], cpg_struct, body_shape, create_config(30, 30))
 
 def simulate_solutions(solution_set: list[stypes.solution],
                        cpg_struct: CpgNetworkStructure,

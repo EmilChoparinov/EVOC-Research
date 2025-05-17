@@ -81,7 +81,7 @@ def simulate_solutions(solution_set: list[stypes.solution],
 
 def optimize(state: stypes.EAState, config: stypes.EAConfig, objective: objective_type):
     NUMBER_OF_GENES = 9
-    POP_SIZE = 16
+    POP_SIZE = 128
     NGEN = state.generation
 
     body_shape = gecko_v2()
@@ -151,7 +151,7 @@ def optimize(state: stypes.EAState, config: stypes.EAConfig, objective: objectiv
         logging.info(f"Best sol: {best_over_all_sol}")
 
     os.makedirs("Outputs/CMAES_CSVs", exist_ok=True)
-    with open(f"Outputs/CMAES_CSVs/best_solutions_run_{state.run}.json", "w") as file:
+    with open(f"Outputs/CMAES_CSVs/best_sol_{objective}_gen_{NGEN}_run_{state.run}.json", "w") as file:
         json.dump(to_dump, file, indent=2)
 
 

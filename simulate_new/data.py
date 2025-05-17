@@ -96,70 +96,6 @@ def calculate_angle(p1, p2, p3):
 
     return angle
 
-# /\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\
-# /             HEURISTICS                       \
-# /\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\
-def apply_front_limb_heuristic(df: pd.DataFrame, z_axis=False):
-    # This is a bandaid for the robot we use literally not matching the animal.
-    # The front limbs of the animal are in different length. So we scale the
-    # points
-    factor = 15/19
-    if not z_axis:
-        for limb in front_limb_group:
-            df[limb] = df[limb].apply(lambda x: (x[0] * factor, x[1] * factor))
-    else:
-        for limb in front_limb_group:
-            df[limb] = df[limb].apply(lambda x: (x[0] * factor, x[1] * factor, x[2]))
-    return df
-
-def compute_scaling_factor(df_robot: pd.DataFrame, df_animal: pd.DataFrame):
-    # The scaling factor is computed in order to scale the robot to be of 
-    # similar magnititude to the animal. This is how the heuristic works:
-    #
-    # 1. Select point cloud R from the first frame. This must be always 0 to 
-    #    keep it deterministic
-    # 2. Select some point cloud reference A from an animal frame. This can be
-    #    any frame because the animal data is fixed.
-    # 3. Calculate the mean of all points R and A and subtract the respective 
-    #    positions in the point cloud to convert all coordinates to be relative
-    # 4. Quantify the variance of both point clouds and take the ratio between
-    #    them. This is the scale factor
-    # 5. We take the square root because variance will give us the square of the
-    #    scaling factor, because the squared *_center^2 within the ratio. We
-    #    take the square root to recover the linear scaling factor
-    #
-    # SCALE FACTOR ALGORITHM LIMITATIONS:
-    # 1. This algorithm essentially assumes that scaling is uniform across all
-    #    dimensions which it is obviously not for the robot. We would need to do
-    #    a more complex approach to capture the true distorted scale factor.
-    #
-    # 2. This algorithm assumes the clouds are already aligned in orientation. I
-    #    believe the animal starts with a slight tilt relative to the x-axis. We
-    #    could try to boost match-ability by ensuring the body vectors 
-    #    (rear -> head) of both animals are aligned before computing the scale
-    #    factor
-    #
-    # The reasoning to use this over a linear computation is because this will be
-    # more robust to noise. Even though the point clouds from the robot are clean
-    # I know the animal data has had some problems. So this is probably the best
-    # approach even though there is low variance between the points and the 
-    # center. The distribution should be somewhat uniform.
-    NR_OF_FRAMES = 30
-    robot_frames = [df_robot.iloc[i] for i in range (NR_OF_FRAMES)]
-    animal_frames = [df_animal.iloc[i] for i in range (NR_OF_FRAMES)]
-
-    S = 0
-    for i in range (NR_OF_FRAMES):
-        R = np.array([list(robot_frames[i][point]) for point in point_definition])
-        A = np.array([list(animal_frames[i][point]) for point in point_definition])
-
-        R_center = R - R.mean(axis=0)
-        A_center = A - A.mean(axis=0)
-
-        S += np.sqrt(np.sum(A_center**2) / np.sum(R_center**2))
-    
-    return S / NR_OF_FRAMES
-
 
 def rotate_dataset(df: pd.DataFrame, theta: float):
     # Define the rotation matrix
@@ -217,7 +153,7 @@ def behaviors_to_dataframes(
     def to_df(z):
         # Extract the dataset generated from Revolve2 into a CSV in the same
         # format as animal_data
-        robot: ModularRobot = z[0] 
+        robot: ModularRobot = z[0]
         behavior: stypes.behavior = z[1]
         body_map = csv_to_body(robot.body)
 
@@ -238,25 +174,10 @@ def behaviors_to_dataframes(
 
         df = pd.DataFrame(arr)
 
-        # Apply the normalization process to make it more in line with animal
-        # data. First we compute the scaling difference on the first frame and
-        # Scale the points up
         if not z_axis:
-            scale_factor = compute_scaling_factor(df, state.animal_data)
-            for point in point_definition:
-                df[point] = df[point]\
-                    .apply(lambda x: (x[0] * scale_factor, x[1] * scale_factor))
             rotate_dataset(df, -90)
         else:
-            scale_factor = compute_scaling_factor(df, state.animal_data)
-            for point in point_definition:
-                df[point] = df[point]\
-                    .apply(lambda x: (x[0] * scale_factor, x[1] * scale_factor, x[2]))
             rotate_dataset_z(df, -90)
-
-        # The front limbs are misconfigured on the robot. We apply a heuristic
-        # s.t. the front and back are the same scale
-        #apply_front_limb_heuristic(df, z_axis=z_axis)
 
         return df
 

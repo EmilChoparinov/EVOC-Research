@@ -70,8 +70,7 @@ def evaluate_individual_distance(genotype):
     )
 
     robot, behavior = simulate_simple(genotype)
-    df_behavior = data.behaviors_to_dataframes(robot, behavior, state, z_axis=False)
-
+    df_behavior = data.behaviors_to_dataframes(robot, behavior, state, z_axis=True)
     f = -evaluate.evaluate_by_distance(df_behavior[0])
     return f
 
@@ -133,7 +132,12 @@ def compare_with_animal_4(genotype):
 
 animal_data_file = "Files/slow_lerp_2.csv"
 genotype = \
-    [0.036649153873096446, -2.061278855579364, 0.5189419969840877, 1.1394412650969163, 0.5482997763941425,
-     1.88291171787614, 2.0019150900921763, -0.3051657544824517, -0.8574720394064639]
-print(evaluate_individual_similarity_4(genotype), evaluate_individual_distance(genotype))
-compare_with_animal_4(genotype)
+[0.03546062464240426, -1.5047713865129424, 0.10836346871518059, 0.6932487611896359, 0.3655277043580059, 0.19805567670626756, 2.373290847688154, -0.06133251145166401, -1.2031692287980407]
+
+
+print(evaluate_individual_distance(genotype), evaluate_individual_similarity_4(genotype))
+visualize_individual(genotype)
+#compare_with_animal_4(genotype)
+
+# Every single cpg has a different scaling factor -> The distance is not objective
+# Scaling factor doesn't modify animal similarity

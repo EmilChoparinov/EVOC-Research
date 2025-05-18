@@ -18,7 +18,7 @@ from simulate_new.evaluate import calculate_4_angles, calculate_2_angles
 
 
 def evaluate_individual(genotype, objective):
-    animal_data = data.convert_tuple_columns(pd.read_csv(animal_data_file))
+    animal_data = data.convert_tuple_columns(pd.read_csv(animal_data_file))[:901]
     state = stypes.EAState(
         generation=1,
         run=1,
@@ -101,12 +101,12 @@ def plot_angles_comparison(robot_angles, animal_angles):
         plt.show()
 
 def compare_with_animal(genotype, objective):
-    animal_data = data.convert_tuple_columns(pd.read_csv(animal_data_file))
+    animal_data = data.convert_tuple_columns(pd.read_csv(animal_data_file))[:901]
     state = stypes.EAState(
         generation=0,
         run=1,
         alpha=-1,
-        animal_data=animal_data[:901],
+        animal_data=animal_data,
     )
 
     body_shape = gecko_v2()

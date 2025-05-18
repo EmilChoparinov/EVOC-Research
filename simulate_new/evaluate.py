@@ -1,4 +1,5 @@
 import math
+from itertools import permutations
 
 from scipy.spatial.distance import euclidean
 from fastdtw import fastdtw
@@ -11,235 +12,82 @@ import simulate_new.stypes as stypes
 from sklearn.metrics import mean_squared_error
 
 # /\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\
-# /               EVALUATORS                     \
+# /               CALCULATORS                    \
 # /\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\
-def evaluate_by_distance(behavior: pd.DataFrame) -> float:
-    return -max(behavior.iloc[-1]['head'][1] - behavior.iloc[0]['head'][1], 0)
-
-def evaluate_nr_of_bad_frames(behavior: pd.DataFrame) -> float:
-    def dist(point1, point2):
-        return math.sqrt((point1[0] - point2[0]) **2 + (point1[1] - point2[1]) **2)
-
-    nr = [0] * 17
-    limbs = ['right_front', 'left_front', 'right_hind', 'left_hind']
-
-    nr_touch = [0] * 4 # The amount of consecutive touches
-    nr_air = [0] * 4 # The amount of consecutive air
-
-    for i in range(1, len(behavior)):
-        for j, limb in enumerate(limbs):
-            limb_touch = (behavior.iloc[i][limb][2] < 0.044)
-            if limb_touch:
-                nr_touch[j] += 1
-                nr_air[j] = 0
-            else:
-                nr_touch[j] = 0
-                nr_air[j] += 1
-
-            if nr_touch[j] >= 120: # If a limb is stuck on the ground for 4 sec or more.
-                nr[j] += 1
-            if nr_air[j] >= 120: # If a limb is stuck in the air for 4 sec or more.
-                nr[j + 4] += 1
-
-        if min(nr_touch[0], nr_touch[1]) >= 5: # If both front limbs are stuck on the ground for 1/6 sec or more.
-            nr[8] += 1
-        if min(nr_touch[2], nr_touch[3]) >= 5: # If both back limbs are stuck on the ground for 1/6 sec or more.
-            nr[9] += 1
-        if min(nr_air[0], nr_air[1]) >= 60: # If both front limbs are stuck in the air for 2 sec or more.
-            nr[10] += 1
-        if min(nr_air[2], nr_air[3]) >= 60: # If both back limbs are stuck in the air for 2 sec or more.
-            nr[11] += 1
-
-        dist_right = dist(behavior.iloc[i]["right_front"], behavior.iloc[i]["right_hind"])
-        dist_left = dist(behavior.iloc[i]["left_front"], behavior.iloc[i]["left_hind"])
-        if dist_right < 34: # If the right limbs are too close.
-            nr[12] += 1
-            if dist_right < 24:
-                nr[12] += 1
-        if dist_left < 34: # If the left limbs are too close.
-            nr[13] += 1
-            if dist_left < 24:
-                nr[13] += 1
-
-        if behavior.iloc[i]['head'][2] < 0.0748: # If the head is very close to the ground.
-            nr[14] += 1
-        #if nr_touch[0] != 0 and nr_touch[3] != 0 and nr_touch[1] == 0 and nr_touch[2] == 0: # Left step
-        #    nr[15] -= 1
-        #if nr_touch[1] != 0 and nr_touch[2] != 0 and nr_touch[0] == 0 and nr_touch[3] == 0: # Right step
-        #    nr[16] -= 1
-
-
-    print(nr)
-    print(sum(nr))
-    return sum(nr)
-
-def evaluate_by_mse(behavior: pd.DataFrame, animal: pd.DataFrame):
-    # Apply MSE to column vector pairs, then take the average of all these pairs
-    def apply_mse(frame):
-        robot_frame = np.array(
-            [frame[point] for point in data.point_definition])
-        animal_frame = np.array(
-            [animal.loc[frame.name, point] for point in data.point_definition])
-        return mean_squared_error(robot_frame, animal_frame)
-    
-    behavior["MSE"] = behavior.apply(apply_mse,axis=1)
-
-    # Apply mean to the column
-    return np.mean(behavior["MSE"])
-
-def evaluate_by_dtw(behavior: pd.DataFrame, animal: pd.DataFrame):
-    # fastdtw library requires the points to be in a tuple of time series
-    def serialize(frame):
-        return np.array([coord for point in 
-                         [frame[point] for point in data.point_definition]
-                         for coord in point])
-
-    robot_timeseries = behavior.apply(serialize, axis=1).to_list()
-    animal_timeseries = animal.apply(serialize, axis=1).to_list()
-
-    # fastdtw library requires the time series to be of the same length
-    normal_len = min(len(robot_timeseries), len(animal_timeseries))
-    robot_timeseries = robot_timeseries[:normal_len]
-    animal_timeseries = animal_timeseries[:normal_len]
-
-    distance, _ = fastdtw(
-        robot_timeseries, animal_timeseries, dist=euclidean)
-
-    return distance
-
 def calculate_2_angles(movement: pd.DataFrame):
-    def calculate_angle_difference(frame):
+    def calculate_angles(frame):
         rf = frame["right_front"]
         rh = frame["right_hind"]
         lf = frame["left_front"]
         lh = frame["left_hind"]
 
-        angle1 = calculate_angle(rf, lh, lf)
-        angle2 = calculate_angle(lf, rh, rf)
+        angles = np.array([calculate_angle(rf, lh, lf), calculate_angle(lf, rh, rf)])
+        return angles
 
-        return angle1, angle2
-
-    return movement.apply(calculate_angle_difference, axis=1)
+    angle_series = movement.apply(calculate_angles, axis=1)
+    return np.vstack(angle_series.values)  # shape = (901, 2)
 
 def calculate_4_angles(movement: pd.DataFrame):
-    def calculate_angle_difference(frame):
+    def calculate_angles(frame):
         rf = frame["right_front"]
         rh = frame["right_hind"]
         lf = frame["left_front"]
         lh = frame["left_hind"]
 
-        angle1 = calculate_angle(rf, lh, lf)
-        angle2 = calculate_angle(lf, rh, rf)
-        angle3 = calculate_angle(rh, lf, lh)
-        angle4 = calculate_angle(lh, rf, rh)
+        angles = np.array([calculate_angle(rf, lh, lf), calculate_angle(lf, rh, rf),
+                  calculate_angle(rh, lf, lh), calculate_angle(lh, rf, rh)])
 
-        return angle1, angle2, angle3, angle4
+        return angles
 
-    return movement.apply(calculate_angle_difference, axis=1)
+    angle_series = movement.apply(calculate_angles, axis=1)
+    return np.vstack(angle_series.values)  # shape = (901, 4)
 
+def calculate_all_angles(movement: pd.DataFrame):
+    point_indices = list(range(7))
+    point_combos = list(permutations(point_indices, 3))
+    point_names = data.point_definition
 
-def evaluate_by_2_angles(behavior: pd.DataFrame, animal_data: pd.DataFrame) -> float:
-    # TODO: Move the angle information into tuples into the data section alongside
-    #       everything else similar to this
-    # TODO: Make MSE version using angle information
-    def calculate_angle_difference(frame):
-        robot_r_f = frame["right_front"]
-        robot_r_h = frame["right_hind"]
-        robot_l_f = frame["left_front"]
-        robot_l_h = frame["left_hind"]
+    def calculate_angles(frame):
+        return np.array([
+            calculate_angle(frame[point_names[i]], frame[point_names[j]], frame[point_names[k]])
+            for i, j, k in point_combos
+        ])
 
-        animal_r_f = animal_data.loc[frame.name, "right_front"]
-        animal_r_h = animal_data.loc[frame.name, "right_hind"]
-        animal_l_f = animal_data.loc[frame.name, "left_front"]
-        animal_l_h = animal_data.loc[frame.name, "left_hind"]
+    angle_series = movement.apply(calculate_angles, axis=1)
+    return np.vstack(angle_series.values)  # shape = (901, 210)
 
-        robot_angles = []
-        animal_angles = []
+# /\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\
+# /               EVALUATORS                     \
+# /\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\
+def evaluate_by_distance(robot_behavior: pd.DataFrame) -> float:
+    return -max(robot_behavior.iloc[-1]['head'][1] - robot_behavior.iloc[0]['head'][1], 0)
 
-        robot_angles.append(calculate_angle(robot_r_f, robot_l_h, robot_l_f))
-        animal_angles.append(calculate_angle(animal_r_f, animal_l_h, animal_l_f))
+def evaluate_by_2_angles(robot_behavior: pd.DataFrame, animal_data: pd.DataFrame) -> float:
+    robot_angles = np.array(calculate_2_angles(robot_behavior)) # .shape = (901, 2)
+    animal_angles = np.array(calculate_2_angles(animal_data)) # .shape = (901, 2)
 
-        robot_angles.append(calculate_angle(robot_l_f, robot_r_h, robot_r_f))
-        animal_angles.append(calculate_angle(animal_l_f, animal_r_h, animal_r_f))
+    simple_differences = np.abs(robot_angles - animal_angles) # .shape = (901, 2)
+    mean_differences = np.mean(simple_differences) # .shape = (2)
+    score = np.mean(mean_differences) # .shape = (1)
+    return score
 
-        s = 0; N = 2
-        for i in range(N):
-            s += (robot_angles[i] - animal_angles[i]) * (robot_angles[i] - animal_angles[i])
+def evaluate_by_4_angles(robot_behavior: pd.DataFrame, animal_data: pd.DataFrame) -> float:
+    robot_angles = calculate_4_angles(robot_behavior) # .shape = (901, 4)
+    animal_angles = calculate_4_angles(animal_data) # .shape = (901, 4)
 
-        return s / N
+    simple_differences = np.abs(robot_angles - animal_angles) # .shape = (901, 4)
+    mean_differences = np.mean(simple_differences) # .shape = (4)
+    score = np.mean(mean_differences) # .shape = (1)
+    return score
 
-    behavior["Angle_Diff"] = behavior.apply(calculate_angle_difference, axis=1)
+def evaluate_by_all_angles(robot_behavior: pd.DataFrame, animal_data: pd.DataFrame) -> float:
+    robot_angles = np.array(calculate_all_angles(robot_behavior)) # .shape = (901, 210)
+    animal_angles = np.array(calculate_all_angles(animal_data)) # .shape = (901, 210)
 
-    return np.mean(behavior["Angle_Diff"])
-
-def evaluate_by_4_angles(behavior: pd.DataFrame, animal_data: pd.DataFrame) -> float:
-    def calculate_angle_difference(frame):
-        robot_r_f = frame["right_front"]
-        robot_r_h = frame["right_hind"]
-        robot_l_f = frame["left_front"]
-        robot_l_h = frame["left_hind"]
-
-        animal_r_f = animal_data.loc[frame.name, "right_front"]
-        animal_r_h = animal_data.loc[frame.name, "right_hind"]
-        animal_l_f = animal_data.loc[frame.name, "left_front"]
-        animal_l_h = animal_data.loc[frame.name, "left_hind"]
-
-        robot_angles = []
-        animal_angles = []
-
-        robot_angles.append(calculate_angle(robot_r_f, robot_l_h, robot_l_f))
-        animal_angles.append(calculate_angle(animal_r_f, animal_l_h, animal_l_f))
-
-        robot_angles.append(calculate_angle(robot_l_f, robot_r_h, robot_r_f))
-        animal_angles.append(calculate_angle(animal_l_f, animal_r_h, animal_r_f))
-
-        robot_angles.append(calculate_angle(robot_r_h, robot_l_f, robot_l_h))
-        animal_angles.append(calculate_angle(animal_r_h, animal_l_f, animal_l_h))
-
-        robot_angles.append(calculate_angle(robot_l_h, robot_r_f, robot_r_h))
-        animal_angles.append(calculate_angle(animal_l_h, animal_r_f, animal_r_h))
-
-        s = 0; N = 4
-        for i in range(N):
-            s += (robot_angles[i] - animal_angles[i]) * (robot_angles[i] - animal_angles[i])
-
-        return s / N
-
-    behavior["Angle_Diff"] = behavior.apply(calculate_angle_difference, axis=1)
-
-    return np.mean(behavior["Angle_Diff"])
-
-def evaluate_by_all_angles(behavior: pd.DataFrame, animal_data: pd.DataFrame) -> float:
-    def calculate_angles_difference(frame):
-        robot_angles = []
-        animal_angles = []
-        for i in range(5):
-            for j in range(i + 1, 6):
-                for k in range(j + 1, 7):
-                    robot_angles.append(calculate_angle(frame[data.point_definition[i]], frame[data.point_definition[j]],
-                                                        frame[data.point_definition[k]]))
-                    robot_angles.append(calculate_angle(frame[data.point_definition[i]], frame[data.point_definition[k]],
-                                                        frame[data.point_definition[j]]))
-                    robot_angles.append(calculate_angle(frame[data.point_definition[j]], frame[data.point_definition[i]],
-                                                        frame[data.point_definition[k]]))
-
-                    animal_angles.append(calculate_angle(animal_data.loc[frame.name, data.point_definition[i]],
-                                                         animal_data.loc[frame.name, data.point_definition[j]],
-                                                         animal_data.loc[frame.name, data.point_definition[k]]))
-                    animal_angles.append(calculate_angle(animal_data.loc[frame.name, data.point_definition[i]],
-                                                         animal_data.loc[frame.name, data.point_definition[k]],
-                                                         animal_data.loc[frame.name, data.point_definition[j]]))
-                    animal_angles.append(calculate_angle(animal_data.loc[frame.name, data.point_definition[j]],
-                                                         animal_data.loc[frame.name, data.point_definition[i]],
-                                                         animal_data.loc[frame.name, data.point_definition[k]]))
-        s = 0
-        for i in range(len(robot_angles)):
-            s += (robot_angles[i] - animal_angles[i]) * (robot_angles[i] - animal_angles[i])
-
-        return s / len(robot_angles)
-
-    behavior["Angle_Diff"] = behavior.apply(calculate_angles_difference, axis=1)
-    return np.mean(behavior["Angle_Diff"])
+    simple_differences = np.abs(robot_angles - animal_angles) # .shape = (901, 210)
+    mean_differences = np.mean(simple_differences) # .shape = (210)
+    score = np.mean(mean_differences) # .shape = (1)
+    return score
 
 def evaluate_mechanical_work(behavior: pd.DataFrame):
     targets = data.point_definition  # List of joint names
@@ -278,7 +126,7 @@ def evaluate_mechanical_work(behavior: pd.DataFrame):
 
     return total_work
 
-# Not Used
+# ----------------------------------------------------------------------------------------------------------------------
 def evaluate_by_2_angles_dtw(behavior: pd.DataFrame, animal_data: pd.DataFrame) -> float:
     min_len = min(len(behavior), len(animal_data))
     behavior = behavior[:min_len]
@@ -305,6 +153,96 @@ def evaluate_by_2_angles_dtw(behavior: pd.DataFrame, animal_data: pd.DataFrame) 
     
     return distance
 
+def evaluate_by_mse(behavior: pd.DataFrame, animal: pd.DataFrame):
+    # Apply MSE to column vector pairs, then take the average of all these pairs
+    def apply_mse(frame):
+        robot_frame = np.array(
+            [frame[point] for point in data.point_definition])
+        animal_frame = np.array(
+            [animal.loc[frame.name, point] for point in data.point_definition])
+        return mean_squared_error(robot_frame, animal_frame)
+
+    behavior["MSE"] = behavior.apply(apply_mse, axis=1)
+
+    # Apply mean to the column
+    return np.mean(behavior["MSE"])
+
+def evaluate_by_dtw(behavior: pd.DataFrame, animal: pd.DataFrame):
+    # fastdtw library requires the points to be in a tuple of time series
+    def serialize(frame):
+        return np.array([coord for point in
+                         [frame[point] for point in data.point_definition]
+                         for coord in point])
+
+    robot_timeseries = behavior.apply(serialize, axis=1).to_list()
+    animal_timeseries = animal.apply(serialize, axis=1).to_list()
+
+    # fastdtw library requires the time series to be of the same length
+    normal_len = min(len(robot_timeseries), len(animal_timeseries))
+    robot_timeseries = robot_timeseries[:normal_len]
+    animal_timeseries = animal_timeseries[:normal_len]
+
+    distance, _ = fastdtw(
+        robot_timeseries, animal_timeseries, dist=euclidean)
+
+    return distance
+
+def evaluate_nr_of_bad_frames(behavior: pd.DataFrame) -> float:
+    def dist(point1, point2):
+        return math.sqrt((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2)
+
+    nr = [0] * 17
+    limbs = ['right_front', 'left_front', 'right_hind', 'left_hind']
+
+    nr_touch = [0] * 4  # The amount of consecutive touches
+    nr_air = [0] * 4  # The amount of consecutive air
+
+    for i in range(1, len(behavior)):
+        for j, limb in enumerate(limbs):
+            limb_touch = (behavior.iloc[i][limb][2] < 0.044)
+            if limb_touch:
+                nr_touch[j] += 1
+                nr_air[j] = 0
+            else:
+                nr_touch[j] = 0
+                nr_air[j] += 1
+
+            if nr_touch[j] >= 120:  # If a limb is stuck on the ground for 4 sec or more.
+                nr[j] += 1
+            if nr_air[j] >= 120:  # If a limb is stuck in the air for 4 sec or more.
+                nr[j + 4] += 1
+
+        if min(nr_touch[0], nr_touch[1]) >= 5:  # If both front limbs are stuck on the ground for 1/6 sec or more.
+            nr[8] += 1
+        if min(nr_touch[2], nr_touch[3]) >= 5:  # If both back limbs are stuck on the ground for 1/6 sec or more.
+            nr[9] += 1
+        if min(nr_air[0], nr_air[1]) >= 60:  # If both front limbs are stuck in the air for 2 sec or more.
+            nr[10] += 1
+        if min(nr_air[2], nr_air[3]) >= 60:  # If both back limbs are stuck in the air for 2 sec or more.
+            nr[11] += 1
+
+        dist_right = dist(behavior.iloc[i]["right_front"], behavior.iloc[i]["right_hind"])
+        dist_left = dist(behavior.iloc[i]["left_front"], behavior.iloc[i]["left_hind"])
+        if dist_right < 34:  # If the right limbs are too close.
+            nr[12] += 1
+            if dist_right < 24:
+                nr[12] += 1
+        if dist_left < 34:  # If the left limbs are too close.
+            nr[13] += 1
+            if dist_left < 24:
+                nr[13] += 1
+
+        if behavior.iloc[i]['head'][2] < 0.0748:  # If the head is very close to the ground.
+            nr[14] += 1
+        # if nr_touch[0] != 0 and nr_touch[3] != 0 and nr_touch[1] == 0 and nr_touch[2] == 0: # Left step
+        #    nr[15] -= 1
+        # if nr_touch[1] != 0 and nr_touch[2] != 0 and nr_touch[0] == 0 and nr_touch[3] == 0: # Right step
+        #    nr[16] -= 1
+
+    print(nr)
+    print(sum(nr))
+    return sum(nr)
+# ----------------------------------------------------------------------------------------------------------------------
 
 def evaluate(behaviors: list[pd.DataFrame],state: stypes.EAState, gen_i: int=-1):
     distance_scores = np.array([evaluate_by_distance(behavior) 

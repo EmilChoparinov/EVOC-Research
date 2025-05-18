@@ -8,7 +8,7 @@ from revolve2.experimentation.logging import setup_logging
 if __name__ == '__main__':
     generations = 500
     animal_data_file = ea.local_path("slow_lerp_2.csv", module="Files")
-    animal_data = data.convert_tuple_columns(pd.read_csv(animal_data_file))
+    animal_data = data.convert_tuple_columns(pd.read_csv(animal_data_file))[:901]
     objective_type: stypes.objective_type = "2_Angles"
 
     for run in range(1, 2):

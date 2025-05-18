@@ -14,10 +14,32 @@ from revolve2.standards.modular_robots_v2 import gecko_v2
 from revolve2.standards.simulation_parameters import make_standard_batch_parameters
 from simulate_new import data, stypes, evaluate
 from simulate_new.cmaes_ea import simulate_solutions, simulate_simple
-from simulate_new.evaluate import calculate_4_angles
+from simulate_new.evaluate import calculate_4_angles, calculate_2_angles
 
-def optimize_individual(genotype, std_dev=0.005):
-    best_fitness = evaluate_individual_distance(genotype)
+
+def evaluate_individual(genotype, objective):
+    animal_data = data.convert_tuple_columns(pd.read_csv(animal_data_file))
+    state = stypes.EAState(
+        generation=1,
+        run=1,
+        alpha=-1,
+        animal_data=animal_data,
+    )
+
+    robot, behavior = simulate_simple(genotype)
+    df_behavior = data.behaviors_to_dataframes(robot, behavior, state, z_axis=True)
+    match objective:
+        case "Distance":
+            return evaluate.evaluate_by_distance(df_behavior[0])
+        case "2_Angles":
+            return  evaluate.evaluate_by_2_angles(df_behavior[0], animal_data)
+        case "4_Angles":
+            return evaluate.evaluate_by_4_angles(df_behavior[0], animal_data)
+        case "All_Angles":
+            return evaluate.evaluate_by_all_angles(df_behavior[0], animal_data)
+# ----------------------------------------------------------------------------------------------------------------------
+def optimize_individual(genotype, objective, std_dev=0.005):
+    best_fitness = evaluate_individual(genotype, objective)
     best_genotype = genotype
     ok = False
     while not ok:
@@ -27,14 +49,15 @@ def optimize_individual(genotype, std_dev=0.005):
             for i in range(9):
                 x[i] += np.random.normal(loc=0, scale=std_dev)
                 x[i] = min(max(x[i], -2.5), 2.5)
-            fitness = evaluate_individual_distance(x)
-            if fitness > best_fitness:
+
+            fitness = evaluate_individual(x, objective)
+            if fitness < best_fitness:
                 best_fitness = fitness
                 best_genotype = x
                 ok = False
                 break
     return best_genotype
-# ----------------------------------------------------------------------------------------------------------------------
+
 def visualize_individual(genotype):
     body_shape = gecko_v2()
     cpg_network_struct, output_mapping = active_hinges_to_cpg_network_structure_neighbor(
@@ -60,38 +83,9 @@ def visualize_individual(genotype):
         scenes=scenes
     )
 # ----------------------------------------------------------------------------------------------------------------------
-def evaluate_individual_distance(genotype):
-    animal_data = data.convert_tuple_columns(pd.read_csv(animal_data_file))
-    state = stypes.EAState(
-        generation=1,
-        run=1,
-        alpha=-1,
-        animal_data=animal_data,
-    )
 
-    robot, behavior = simulate_simple(genotype)
-    df_behavior = data.behaviors_to_dataframes(robot, behavior, state, z_axis=True)
-    f = -evaluate.evaluate_by_distance(df_behavior[0])
-    return f
-
-def evaluate_individual_similarity_4(genotype):
-    animal_data = data.convert_tuple_columns(pd.read_csv(animal_data_file))
-    state = stypes.EAState(
-        generation=1,
-        run=1,
-        alpha=-1,
-        animal_data=animal_data
-    )
-
-    robot, behavior = simulate_simple(genotype)
-    df_behavior = data.behaviors_to_dataframes(robot, behavior, state, z_axis=True)
-
-    f = evaluate.evaluate_by_4_angles(df_behavior[0], state.animal_data)
-    return f
-# ----------------------------------------------------------------------------------------------------------------------
-
-def plot_4_angles_comparison(robot_angles, animal_angles):
-    num_angles = 4
+def plot_angles_comparison(robot_angles, animal_angles):
+    num_angles = len(robot_angles)
     time = range(901)
 
     for i in range(num_angles):
@@ -106,7 +100,7 @@ def plot_4_angles_comparison(robot_angles, animal_angles):
         plt.tight_layout()
         plt.show()
 
-def compare_with_animal_4(genotype):
+def compare_with_animal(genotype, objective):
     animal_data = data.convert_tuple_columns(pd.read_csv(animal_data_file))
     state = stypes.EAState(
         generation=0,
@@ -124,20 +118,25 @@ def compare_with_animal_4(genotype):
     robot, behavior = simulate_solutions([genotype], cpg_struct, body_shape, mapping, config)
     df = data.behaviors_to_dataframes(robot, behavior, state, z_axis=True)[0]
 
-    robot_angles = list(zip(*calculate_4_angles(df)))
-    animal_angles = list(zip(*calculate_4_angles(state.animal_data)))
+    match objective:
+        case "2_Angles":
+            robot_angles = list(zip(*calculate_2_angles(df)))
+            animal_angles = list(zip(*calculate_2_angles(state.animal_data)))
+        case "4_Angles":
+            robot_angles = list(zip(*calculate_4_angles(df)))
+            animal_angles = list(zip(*calculate_4_angles(state.animal_data)))
 
-    plot_4_angles_comparison(robot_angles, animal_angles)
+    plot_angles_comparison(robot_angles, animal_angles)
 # ----------------------------------------------------------------------------------------------------------------------
 
 animal_data_file = "Files/slow_lerp_2.csv"
 genotype = \
 [0.03546062464240426, -1.5047713865129424, 0.10836346871518059, 0.6932487611896359, 0.3655277043580059, 0.19805567670626756, 2.373290847688154, -0.06133251145166401, -1.2031692287980407]
 
+distance = evaluate_individual(genotype, "Distance")
+Two_Angles = evaluate_individual(genotype, "2_Angles")
+Four_Angels = evaluate_individual(genotype, "4_Angles")
+print(f"Distance: {distance}, 2_Angles: {Two_Angles}, 4_Angles: {Four_Angels}")
 
-print(evaluate_individual_distance(genotype), evaluate_individual_similarity_4(genotype))
-visualize_individual(genotype)
-#compare_with_animal_4(genotype)
-
-# Every single cpg has a different scaling factor -> The distance is not objective
-# Scaling factor doesn't modify animal similarity
+compare_with_animal(genotype, "2_Angles")
+#visualize_individual(genotype)

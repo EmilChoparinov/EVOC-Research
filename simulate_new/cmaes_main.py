@@ -3,7 +3,7 @@ import pandas as pd
 import simulate_new.stypes as stypes
 import simulate_new.cmaes_ea as ea
 from simulate_new import data
-from revolve2.experimentation.logging import setup_logging, logging
+from revolve2.experimentation.logging import setup_logging
 
 if __name__ == '__main__':
     generations = 500

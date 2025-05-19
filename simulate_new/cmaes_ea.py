@@ -15,6 +15,7 @@ from revolve2.modular_robot.brain.cpg import active_hinges_to_cpg_network_struct
 from revolve2.standards.modular_robots_v2 import gecko_v2
 from revolve2.simulators.mujoco_simulator import LocalSimulator
 from revolve2.standards.simulation_parameters import make_standard_batch_parameters
+from simulate_new import evaluate_fast
 
 from simulate_new.stypes import objective_type
 import os
@@ -103,11 +104,11 @@ def optimize(state: stypes.EAState, config: stypes.EAConfig, objective: objectiv
             #case "DTW":
             #    return [evaluate.evaluate_by_dtw(df, state.animal_data) for df in df_behaviors]
             case "2_Angles":
-                return [evaluate.evaluate_by_2_angles(df, state.animal_data) for df in df_behaviors]
+                return [evaluate_fast.evaluate_by_2_angles(df) for df in df_behaviors]
             case "4_Angles":
-                return [evaluate.evaluate_by_4_angles(df, state.animal_data) for df in df_behaviors]
+                return [evaluate_fast.evaluate_by_4_angles(df) for df in df_behaviors]
             case "All_Angles":
-                return [evaluate.evaluate_by_all_angles(df, state.animal_data) for df in df_behaviors]
+                return [evaluate_fast.evaluate_by_all_angles(df) for df in df_behaviors]
             case "Work":
                 return [evaluate.evaluate_mechanical_work(df) for df in df_behaviors]
 
@@ -140,9 +141,9 @@ def optimize(state: stypes.EAState, config: stypes.EAConfig, objective: objectiv
                 "distance": -evaluate.evaluate_by_distance(df),
                 # "MSE": evaluate.evaluate_by_mse(df, state.animal_data),
                 # "DTW": evaluate.evaluate_by_dtw(df, state.animal_data),
-                "2_Angles": evaluate.evaluate_by_2_angles(df, state.animal_data),
-                "4_Angles": evaluate.evaluate_by_4_angles(df, state.animal_data),
-                "All_Angles": evaluate.evaluate_by_all_angles(df, state.animal_data),
+                "2_Angles": evaluate_fast.evaluate_by_2_angles(df),
+                "4_Angles": evaluate_fast.evaluate_by_4_angles(df),
+                "All_Angles": evaluate_fast.evaluate_by_all_angles(df),
                 "Work": evaluate.evaluate_mechanical_work(df),
             }
             to_dump.append(new_entry)

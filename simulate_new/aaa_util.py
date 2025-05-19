@@ -131,7 +131,7 @@ def compare_with_animal(genotype, objective):
 
 animal_data_file = "Files/slow_lerp_2.csv"
 genotype = \
-[0.03546062464240426, -1.5047713865129424, 0.10836346871518059, 0.6932487611896359, 0.3655277043580059, 0.19805567670626756, 2.373290847688154, -0.06133251145166401, -1.2031692287980407]
+[0.04520475228474814, -2.2563326316037036, 0.6309496006794598, -0.6165620442936269, 0.04976911450836291, 0.05328812152967667, -1.9041104527880313, -0.22015183464743085, 2.2432084370304346]
 
 distance = evaluate_individual(genotype, "Distance")
 Two_Angles = evaluate_individual(genotype, "2_Angles")
@@ -139,4 +139,4 @@ Four_Angels = evaluate_individual(genotype, "4_Angles")
 print(f"Distance: {distance}, 2_Angles: {Two_Angles}, 4_Angles: {Four_Angels}")
 
 compare_with_animal(genotype, "2_Angles")
-#visualize_individual(genotype)
+visualize_individual(genotype)

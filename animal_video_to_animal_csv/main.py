@@ -22,8 +22,8 @@ for i in range(16, 64):
     for (x, y) in points:
         row.append(f"({x}, {y})")
 
-    with open("output_points.csv", mode="a", newline="") as file:
+    with open("Files/animal_data.csv", mode="a", newline="") as file:
         writer = csv.writer(file)
-        if os.stat("output_points.csv").st_size == 0:
+        if os.stat("Files/animal_data.csv").st_size == 0:
             writer.writerow(headers)
         writer.writerow(row)

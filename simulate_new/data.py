@@ -92,9 +92,20 @@ def calculate_angle(p1, p2, p3):
     angle1 = np.arctan2(vec1[1], vec1[0])
     angle2 = np.arctan2(vec2[1], vec2[0])
 
-    angle = np.degrees(abs(angle2 - angle1))
+    return np.degrees(abs(angle2 - angle1))
 
-    return angle
+def calculate_angle_batch(p1: np.ndarray, p2: np.ndarray, p3: np.ndarray):
+    p1_xy = p1[:, :2]
+    p2_xy = p2[:, :2]
+    p3_xy = p3[:, :2]
+
+    vec1 = p1_xy - p2_xy
+    vec2 = p3_xy - p2_xy
+
+    angle1 = np.arctan2(vec1[:, 1], vec1[:, 0])
+    angle2 = np.arctan2(vec2[:, 1], vec2[:, 0])
+
+    return np.degrees(np.abs(angle2 - angle1))
 
 
 def rotate_dataset(df: pd.DataFrame, theta: float):

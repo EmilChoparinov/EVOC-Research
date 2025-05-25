@@ -1,9 +1,14 @@
 import json
 import logging
+from itertools import chain, repeat
+
 import numpy as np
 from cma import CMAOptions, CMAEvolutionStrategy
+from matplotlib import pyplot as plt
 
 from revolve2.modular_robot.body.v2 import BodyV2
+from revolve2.modular_robot_physical.robot_daemon_api.robot_daemon_protocol_capnp import Vector3
+from revolve2.simulation.scene import Pose
 from revolve2.standards import terrains
 from revolve2.modular_robot_simulation import ModularRobotScene, simulate_scenes
 
@@ -54,7 +59,18 @@ def file_idempotent(state: stypes.EAState, objective: objective_type) -> str:
 def simulate_solutions(solution_set: list[stypes.solution],
                        cpg_struct: CpgNetworkStructure,
                        body_shape: BodyV2, body_map: any,
-                       config: stypes.EAConfig):
+                       config: stypes.EAConfig,
+                       batch_size=4):
+
+    def new_scene(robots: list[ModularRobot]) -> ModularRobotScene:
+        s = ModularRobotScene(terrain=terrains.flat())
+        for i in range(len(robots)):
+            pose = Pose()
+            pose.position.x = i * 10
+            pose.position.y = 0
+            pose.position.z = 0
+            s.add_robot(robot=robots[i], pose=pose)
+        return s
 
     robots = [
         ModularRobot(
@@ -66,15 +82,14 @@ def simulate_solutions(solution_set: list[stypes.solution],
                 output_mapping=body_map))
         for solution in solution_set]
 
-    def new_robot_scene(robot: ModularRobot) -> ModularRobotScene:
-        s = ModularRobotScene(terrain=terrains.flat())
-        s.add_robot(robot)
-        return s
+    scenes = []
+    for i in range(0, len(robots), batch_size):
+        group = robots[i:i + batch_size]
+        scenes.append(new_scene(group))
 
-    scenes = [new_robot_scene(robot) for robot in robots]
     return (robots,
             simulate_scenes(
-                simulator=LocalSimulator(headless=True, num_simulators=8),
+                simulator=LocalSimulator(headless=True, num_simulators=14),
                 batch_parameters=make_standard_batch_parameters(
                     simulation_time=config.ttl,
                     sampling_frequency=config.freq),
@@ -93,8 +108,10 @@ def optimize(state: stypes.EAState, config: stypes.EAConfig, objective: objectiv
     best_over_all_sol = None
 
     def evaluate_population(individuals):
-        robots, behaviors = simulate_solutions(individuals, cpg_struct, body_shape, mapping, config)
-        df_behaviors = data.behaviors_to_dataframes(robots, behaviors, state, z_axis=True)
+        batch_size = 1 # !! It does not work for multiple robots (something with the mujoco simulator - it returns the pose only for one robot for some reason)
+        robots, behaviors = simulate_solutions(individuals, cpg_struct, body_shape, mapping, config, batch_size)
+        expanded_behaviors = list(chain.from_iterable(repeat(b, batch_size) for b in behaviors))
+        df_behaviors = data.behaviors_to_dataframes(robots, expanded_behaviors, state, z_axis=True)
 
         match objective:
             case "Distance":
@@ -103,6 +120,8 @@ def optimize(state: stypes.EAState, config: stypes.EAConfig, objective: objectiv
             #    return [evaluate.evaluate_by_mse(df, state.animal_data) for df in df_behaviors]
             #case "DTW":
             #    return [evaluate.evaluate_by_dtw(df, state.animal_data) for df in df_behaviors]
+            case "1_Angle":
+                return evaluate_fast.evaluate_population_by_1_angle(df_behaviors)
             case "2_Angles":
                 return [evaluate_fast.evaluate_by_2_angles(df) for df in df_behaviors]
             case "4_Angles":
@@ -115,6 +134,7 @@ def optimize(state: stypes.EAState, config: stypes.EAConfig, objective: objectiv
     cma_es_options = CMAOptions()
     cma_es_options.set("bounds", [-2.5, 2.5])
     cma_es_options.set("popsize", POP_SIZE)
+    cma_es_options.set("seed", state.run)
 
     cma_es = CMAEvolutionStrategy(NUMBER_OF_GENES * [0.0], 0.5, cma_es_options)
 
@@ -141,6 +161,7 @@ def optimize(state: stypes.EAState, config: stypes.EAConfig, objective: objectiv
                 "distance": -evaluate.evaluate_by_distance(df),
                 # "MSE": evaluate.evaluate_by_mse(df, state.animal_data),
                 # "DTW": evaluate.evaluate_by_dtw(df, state.animal_data),
+                "1_Angle": evaluate_fast.evaluate_individual_by_1_angle(df),
                 "2_Angles": evaluate_fast.evaluate_by_2_angles(df),
                 "4_Angles": evaluate_fast.evaluate_by_4_angles(df),
                 "All_Angles": evaluate_fast.evaluate_by_all_angles(df),

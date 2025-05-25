@@ -65,4 +65,4 @@ def create_video_state(animal_behavior):
     video.release()
     cv2.destroyAllWindows()
 
-create_video_state(pd.read_csv("../simulate/model/slow_interpolated_2.csv"))
+create_video_state(pd.read_csv("./Files/animal_data_3_slow_down_lerp_2.csv"))

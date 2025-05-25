@@ -14,7 +14,7 @@ from revolve2.standards.modular_robots_v2 import gecko_v2
 from revolve2.standards.simulation_parameters import make_standard_batch_parameters
 from simulate_new import data, stypes, evaluate
 from simulate_new.cmaes_ea import simulate_solutions, simulate_simple
-from simulate_new.evaluate import calculate_4_angles, calculate_2_angles
+from simulate_new.evaluate import calculate_1_angle_single, calculate_2_angles, calculate_4_angles
 
 
 def evaluate_individual(genotype, objective):
@@ -31,6 +31,8 @@ def evaluate_individual(genotype, objective):
     match objective:
         case "Distance":
             return evaluate.evaluate_by_distance(df_behavior[0])
+        case "1_Angle":
+            return evaluate.evaluate_by_1_angle(df_behavior[0], animal_data)
         case "2_Angles":
             return  evaluate.evaluate_by_2_angles(df_behavior[0], animal_data)
         case "4_Angles":
@@ -119,24 +121,35 @@ def compare_with_animal(genotype, objective):
     df = data.behaviors_to_dataframes(robot, behavior, state, z_axis=True)[0]
 
     match objective:
+        case "1_Angle":
+            animal_angles = list(zip(*calculate_1_angle_single(state.animal_data)))
+            robot_angles = list(zip(*calculate_1_angle_single(df)))
         case "2_Angles":
-            robot_angles = list(zip(*calculate_2_angles(df)))
             animal_angles = list(zip(*calculate_2_angles(state.animal_data)))
+            robot_angles = list(zip(*calculate_2_angles(df)))
         case "4_Angles":
-            robot_angles = list(zip(*calculate_4_angles(df)))
             animal_angles = list(zip(*calculate_4_angles(state.animal_data)))
+            robot_angles = list(zip(*calculate_4_angles(df)))
 
     plot_angles_comparison(robot_angles, animal_angles)
 # ----------------------------------------------------------------------------------------------------------------------
 
-animal_data_file = "Files/slow_lerp_2.csv"
+
+animal_data_file = "Files/animal_data_3_slow_down_lerp_2.csv"
+#animal_data_file = "Files/slow_lerp_2.csv"
 genotype = \
-[0.04520475228474814, -2.2563326316037036, 0.6309496006794598, -0.6165620442936269, 0.04976911450836291, 0.05328812152967667, -1.9041104527880313, -0.22015183464743085, 2.2432084370304346]
+[-2.1736939345657382, -0.03828032134984976, 0.7607309514617201, 0.7292337865857976, 0.3933661432762584, 0.37496522194128784, -0.47564262276933583, 1.9220679507707186, 0.4069467164414296]
 
-distance = evaluate_individual(genotype, "Distance")
-Two_Angles = evaluate_individual(genotype, "2_Angles")
-Four_Angels = evaluate_individual(genotype, "4_Angles")
-print(f"Distance: {distance}, 2_Angles: {Two_Angles}, 4_Angles: {Four_Angels}")
+distance = None
+One_Angle = None
+Two_Angles = None
+Four_Angels = None
 
-compare_with_animal(genotype, "2_Angles")
+#distance = evaluate_individual(genotype, "Distance")
+One_Angle = evaluate_individual(genotype, "1_Angle")
+#Two_Angles = evaluate_individual(genotype, "2_Angles")
+#Four_Angels = evaluate_individual(genotype, "4_Angles")
+print(f"Distance: {distance}, 1_Angle: {One_Angle}, 2_Angles: {Two_Angles}, 4_Angles: {Four_Angels}")
+
+compare_with_animal(genotype, "1_Angle")
 visualize_individual(genotype)

@@ -4,7 +4,7 @@ from itertools import permutations
 from scipy.spatial.distance import euclidean
 from fastdtw import fastdtw
 import simulate_new.data as data
-from data import calculate_angle
+from data import calculate_angle, calculate_angle_batch
 import pandas as pd
 import numpy as np
 from simulate_new.data import mix_ab, ab_mixer
@@ -14,6 +14,41 @@ from sklearn.metrics import mean_squared_error
 # /\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\
 # /               CALCULATORS                    \
 # /\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\
+def calculate_1_angle_single(movement: pd.DataFrame):
+    # !!! In essence, this is the only angle that the robot can control
+    # !! All the other angles can be calculated using only this angle (And the fact that the limbs of the robot have constant length)
+    def extract_coords(col):
+        return np.stack(movement[col].values)
+
+    heads = extract_coords("head")
+    middles = extract_coords("middle")
+    rears = extract_coords("rear")
+
+    angles = calculate_angle_batch(heads, middles, rears)
+    return angles[:, np.newaxis]
+
+def calculate_1_angle_multiple(movements: list[pd.DataFrame]):
+    n_movements = len(movements)
+    n_frames = len(movements[0])
+    coord_dim = len(movements[0]["head"].iloc[0])
+
+    heads_all = np.empty((n_movements * n_frames, coord_dim))
+    middles_all = np.empty((n_movements * n_frames, coord_dim))
+    rears_all = np.empty((n_movements * n_frames, coord_dim))
+
+    for i, movement in enumerate(movements):
+        start = i * n_frames
+        end = start + n_frames
+
+        heads_all[start:end] = np.array(movement["head"].tolist())
+        middles_all[start:end] = np.array(movement["middle"].tolist())
+        rears_all[start:end] = np.array(movement["rear"].tolist())
+
+    angles_all = calculate_angle_batch(heads_all, middles_all, rears_all)
+    angles_reshaped = angles_all.reshape(n_movements, n_frames, 1)
+    return angles_reshaped
+# ----------------------------------------------------------------------------------------------------------------------
+
 def calculate_2_angles(movement: pd.DataFrame):
     def calculate_angles(frame):
         rf = frame["right_front"]
@@ -61,6 +96,15 @@ def calculate_all_angles(movement: pd.DataFrame):
 # /\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\
 def evaluate_by_distance(robot_behavior: pd.DataFrame) -> float:
     return -max(robot_behavior.iloc[-1]['head'][1] - robot_behavior.iloc[0]['head'][1], 0)
+
+def evaluate_by_1_angle(robot_behavior: pd.DataFrame, animal_data: pd.DataFrame) -> float:
+    robot_angles = np.array(calculate_1_angle_single(robot_behavior)) # .shape = (901, 1)
+    animal_angles = np.array(calculate_1_angle_single(animal_data)) # .shape = (901, 1)
+
+    simple_differences = np.abs(robot_angles - animal_angles) # .shape = (901, 1)
+    mean_differences = np.mean(simple_differences) # .shape = (1)
+    score = np.mean(mean_differences) # .shape = (1)
+    return score
 
 def evaluate_by_2_angles(robot_behavior: pd.DataFrame, animal_data: pd.DataFrame) -> float:
     robot_angles = np.array(calculate_2_angles(robot_behavior)) # .shape = (901, 2)

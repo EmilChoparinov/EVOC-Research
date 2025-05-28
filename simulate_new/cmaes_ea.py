@@ -4,10 +4,8 @@ from itertools import chain, repeat
 
 import numpy as np
 from cma import CMAOptions, CMAEvolutionStrategy
-from matplotlib import pyplot as plt
 
 from revolve2.modular_robot.body.v2 import BodyV2
-from revolve2.modular_robot_physical.robot_daemon_api.robot_daemon_protocol_capnp import Vector3
 from revolve2.simulation.scene import Pose
 from revolve2.standards import terrains
 from revolve2.modular_robot_simulation import ModularRobotScene, simulate_scenes
@@ -96,6 +94,7 @@ def simulate_solutions(solution_set: list[stypes.solution],
                 scenes=scenes))
 
 def optimize(state: stypes.EAState, config: stypes.EAConfig, objective: objective_type):
+    SEED = state.run
     NUMBER_OF_GENES = 9
     POP_SIZE = 128
     NGEN = state.generation
@@ -134,7 +133,7 @@ def optimize(state: stypes.EAState, config: stypes.EAConfig, objective: objectiv
     cma_es_options = CMAOptions()
     cma_es_options.set("bounds", [-2.5, 2.5])
     cma_es_options.set("popsize", POP_SIZE)
-    cma_es_options.set("seed", state.run)
+    cma_es_options.set("seed", SEED)
 
     cma_es = CMAEvolutionStrategy(NUMBER_OF_GENES * [0.0], 0.5, cma_es_options)
 
@@ -173,7 +172,7 @@ def optimize(state: stypes.EAState, config: stypes.EAConfig, objective: objectiv
         logging.info(f"Best sol: {best_over_all_sol}")
 
     os.makedirs("Outputs/CMAES_CSVs", exist_ok=True)
-    with open(f"Outputs/CMAES_CSVs/best_sol_{objective}_gen_{NGEN}_run_{state.run}.json", "w") as file:
+    with open(f"Outputs/CMAES_CSVs/best_sol_{objective}_gen_{NGEN}_run_{state.run}_seed_{SEED}.json", "w") as file:
         json.dump(to_dump, file, indent=2)
 
 

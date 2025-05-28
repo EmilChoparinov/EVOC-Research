@@ -6,7 +6,7 @@ from simulate_new import data
 from revolve2.experimentation.logging import setup_logging
 
 if __name__ == '__main__':
-    generations = 2
+    generations = 500
     # Be careful to change the file also in evaluate_fast.py !!!
     animal_data_file = ea.local_path("animal_data_3_slow_down_lerp_2.csv", module="Files")
     animal_data = data.convert_tuple_columns(pd.read_csv(animal_data_file))[:901]
